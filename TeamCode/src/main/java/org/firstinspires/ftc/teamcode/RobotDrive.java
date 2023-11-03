@@ -1,26 +1,31 @@
 package org.firstinspires.ftc.teamcode;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.gamepad1;
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
-
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
 public class RobotDrive {
 
-    private HardwareMap hardwareMap;
-    private ElapsedTime runtime;
+    private final HardwareMap hardwareMap;
+    private final ElapsedTime runtime;
+    private final Telemetry telemetry;
+    private final Gamepad gamepad1;
     private DcMotor left1 = null;
     private DcMotor left2 = null;
     //define right motors 1 and 2
     private DcMotor right1 = null;
     private DcMotor right2 = null;
 
-    public RobotDrive(HardwareMap hardwareMap, ElapsedTime runtime ) {
+
+    public RobotDrive(HardwareMap hardwareMap, ElapsedTime runtime, Gamepad gamepad1, Telemetry telemetry) {
         this.hardwareMap = hardwareMap;
         this.runtime = runtime;
+        this.gamepad1 = gamepad1;
+        this.telemetry = telemetry;
     }
 
     public void init() {
@@ -48,6 +53,7 @@ public class RobotDrive {
 
         //send the resultant to the motors
         left1.setPower(powerL);
+        telemetry.addData("power left val:", powerL);
         left2.setPower(powerL);
         right1.setPower(powerR);
         right2.setPower(powerR);
