@@ -54,7 +54,9 @@ public class April {
         this.telemetry = telemetry;
         this.gamepad1 = gamepad1;
         initAprilTag();
-        gamepadSteaming();
+        if (gamepad1 != null) {
+            gamepadSteaming();
+        }
     }
     public void gamepadSteaming() {
         telemetryAprilTag();

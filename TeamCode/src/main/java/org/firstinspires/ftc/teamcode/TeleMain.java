@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp(name="Competition", group="Iterative OpMode")
 //@Disabled
-public class RobotMain extends OpMode {
+public class TeleMain extends OpMode {
     private final ElapsedTime runtime = new ElapsedTime();
     private RobotArm robotArm = null;
     private RobotDrive robotDrive = null;
