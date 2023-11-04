@@ -47,7 +47,7 @@ public class RobotDrive {
 
         //fetch the stick data and do the math
         double drive = -gamepad1.left_stick_y;
-        double turn = gamepad1.right_stick_x;
+        double turn = -gamepad1.right_stick_x;
         powerL = Range.clip(drive + turn, -1.0, 1.0);
         powerR = Range.clip(drive - turn, -1.0, 1.0);
 

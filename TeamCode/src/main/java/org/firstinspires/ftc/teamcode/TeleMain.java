@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 
 
-@TeleOp(name="Competition", group="Iterative OpMode")
+@TeleOp(name="Tele-Comp", group="Iterative OpMode")
 //@Disabled
 public class TeleMain extends OpMode {
     private final ElapsedTime runtime = new ElapsedTime();
