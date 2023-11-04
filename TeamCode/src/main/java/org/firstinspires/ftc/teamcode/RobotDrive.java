@@ -41,7 +41,7 @@ public class RobotDrive {
         right1.setDirection(DcMotor.Direction.FORWARD);
         right2.setDirection(DcMotor.Direction.REVERSE);
     }
-    public void loop() {
+    public void arcade() {
         double powerL;
         double powerR;
 
@@ -53,7 +53,24 @@ public class RobotDrive {
 
         //send the resultant to the motors
         left1.setPower(powerL);
-        telemetry.addData("power left val:", powerL);
+        left2.setPower(powerL);
+        right1.setPower(powerR);
+        right2.setPower(powerR);
+
+        //log that!
+        telemetry.addData("Status", "Run Time: " + runtime.toString());
+        telemetry.addData("DriveMotors", "left (%.2f), right (%.2f)", powerL, powerR);
+    }
+    public void tank() {
+        double powerL;
+        double powerR;
+
+        //fetch the stick data and do the math
+         powerL = -gamepad1.left_stick_y;
+         powerR = -gamepad1.right_stick_y;
+
+        //send the resultant to the motors
+        left1.setPower(powerL);
         left2.setPower(powerL);
         right1.setPower(powerR);
         right2.setPower(powerR);

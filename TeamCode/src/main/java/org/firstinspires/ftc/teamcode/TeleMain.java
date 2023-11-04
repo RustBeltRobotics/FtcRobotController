@@ -33,7 +33,7 @@ public class TeleMain extends OpMode {
     public void start() { runtime.reset(); }
     //code to loop between PLAY and STOP buttons
     public void loop() {
-        robotDrive.loop();
+        robotDrive.arcade();
         robotArm.loop();
     }
     @Override
