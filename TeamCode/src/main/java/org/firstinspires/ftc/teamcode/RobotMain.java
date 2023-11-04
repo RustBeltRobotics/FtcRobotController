@@ -12,18 +12,21 @@ public class RobotMain extends OpMode {
     private final ElapsedTime runtime = new ElapsedTime();
     private RobotArm robotArm = null;
     private RobotDrive robotDrive = null;
+    private April april = null;
     @Override
     public void init() {
         telemetry.addData("Status", "Initializing");
 
         robotArm = new RobotArm(hardwareMap, runtime, gamepad2, telemetry);
         robotDrive = new RobotDrive(hardwareMap, runtime, gamepad1, telemetry);
+        april = new April(hardwareMap, telemetry, gamepad1);
 
         telemetry.addData("Power Left val:", gamepad1.toString());
         telemetry.addData("Status", "Initialized");
 
         robotDrive.init();
         robotArm.init();
+
     }
     //code to run once when the 'PLAY' button is triggered
     @Override
