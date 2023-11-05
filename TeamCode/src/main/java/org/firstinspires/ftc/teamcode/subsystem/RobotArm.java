@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.subsystem;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -8,9 +8,11 @@ import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
+/**
+ * Subsystem for Arm mechanism (extension, rotation, etc.)
+ */
 public class RobotArm {
     private final ElapsedTime runtime;
-
     private final HardwareMap hardwareMap;
     private final Telemetry telemetry;
     private final Gamepad gamepad2;
@@ -44,7 +46,6 @@ public class RobotArm {
         arm2.setPower(powerA);
 
         telemetry.addData("Status", "Run Time: " + runtime.toString());
-
         telemetry.addData("ArmMotors", "power:", powerA);
     }
 }

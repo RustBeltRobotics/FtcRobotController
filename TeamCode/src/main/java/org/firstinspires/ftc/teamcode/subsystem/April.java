@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.subsystem;
 
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -41,6 +41,10 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
 //@Disabled
+
+/**
+ * Subsystem for April Tag detection
+ */
 public class April {
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
     private AprilTagProcessor aprilTag;

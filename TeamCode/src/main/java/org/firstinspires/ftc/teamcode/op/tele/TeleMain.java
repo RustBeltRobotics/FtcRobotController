@@ -1,10 +1,13 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.op.tele;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-
+import org.firstinspires.ftc.teamcode.model.DriveType;
+import org.firstinspires.ftc.teamcode.subsystem.April;
+import org.firstinspires.ftc.teamcode.subsystem.RobotArm;
+import org.firstinspires.ftc.teamcode.subsystem.RobotDrive;
 
 @TeleOp(name="Tele-Comp", group="Iterative OpMode")
 //@Disabled
@@ -25,6 +28,7 @@ public class TeleMain extends OpMode {
         telemetry.addData("Status", "Initialized");
 
         robotDrive.init();
+        robotDrive.setDriveType(DriveType.ARCADE);
         robotArm.init();
 
     }
@@ -33,7 +37,7 @@ public class TeleMain extends OpMode {
     public void start() { runtime.reset(); }
     //code to loop between PLAY and STOP buttons
     public void loop() {
-        robotDrive.arcade();
+        robotDrive.drive();
         robotArm.loop();
     }
     @Override
