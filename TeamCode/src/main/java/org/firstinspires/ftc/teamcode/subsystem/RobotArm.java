@@ -32,6 +32,9 @@ public class RobotArm {
 
         arm1.setDirection(DcMotor.Direction.FORWARD);
         arm2.setDirection(DcMotor.Direction.REVERSE);
+
+        arm1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        arm2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         telemetry.addData("Status", "Arm Initialized");
     }
 

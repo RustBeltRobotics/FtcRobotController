@@ -45,6 +45,12 @@ public class RobotDrive {
 
         right1.setDirection(DcMotor.Direction.FORWARD);
         right2.setDirection(DcMotor.Direction.REVERSE);
+
+        left1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        left2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        right1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        right2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
     }
 
     public void drive() {
