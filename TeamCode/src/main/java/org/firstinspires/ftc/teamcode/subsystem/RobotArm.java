@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
-import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -16,8 +16,8 @@ public class RobotArm {
     private final HardwareMap hardwareMap;
     private final Telemetry telemetry;
     private final Gamepad gamepad2;
-    private DcMotor arm1 = null;
-    private DcMotor arm2 = null;
+    private DcMotorEx arm1 = null;
+    private DcMotorEx arm2 = null;
 
     public RobotArm(HardwareMap hardwareMap, ElapsedTime runtime, Gamepad gamepad2, Telemetry telemetry) {
         this.hardwareMap = hardwareMap;
@@ -27,14 +27,14 @@ public class RobotArm {
     }
 
     public void init() {
-        arm1 = hardwareMap.get(DcMotor.class, "A1");
-        arm2 = hardwareMap.get(DcMotor.class, "A2");
+        arm1 = hardwareMap.get(DcMotorEx.class, "A1");
+        arm2 = hardwareMap.get(DcMotorEx.class, "A2");
 
-        arm1.setDirection(DcMotor.Direction.FORWARD);
-        arm2.setDirection(DcMotor.Direction.REVERSE);
+        arm1.setDirection(DcMotorEx.Direction.FORWARD);
+        arm2.setDirection(DcMotorEx.Direction.REVERSE);
 
-        arm1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        arm2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        arm1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        arm2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         telemetry.addData("Status", "Arm Initialized");
     }
 

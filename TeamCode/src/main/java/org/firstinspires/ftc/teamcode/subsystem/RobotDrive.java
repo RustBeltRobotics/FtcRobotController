@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
-import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -18,11 +18,11 @@ public class RobotDrive {
     private final ElapsedTime runtime;
     private final Telemetry telemetry;
     private final Gamepad gamepad1;
-    private DcMotor left1 = null;
-    private DcMotor left2 = null;
+    private DcMotorEx left1 = null;
+    private DcMotorEx left2 = null;
     //define right motors 1 and 2
-    private DcMotor right1 = null;
-    private DcMotor right2 = null;
+    private DcMotorEx right1 = null;
+    private DcMotorEx right2 = null;
 
     private DriveType driveType = DriveType.TANK;
 
@@ -34,22 +34,32 @@ public class RobotDrive {
     }
 
     public void init() {
-        left1 = hardwareMap.get(DcMotor.class, "L1");
-        left2 = hardwareMap.get(DcMotor.class, "L2");
+        left1 = hardwareMap.get(DcMotorEx.class, "L1");
+        left2 = hardwareMap.get(DcMotorEx.class, "L2");
 
-        right1 = hardwareMap.get(DcMotor.class, "R1");
-        right2 = hardwareMap.get(DcMotor.class, "R2");
+        right1 = hardwareMap.get(DcMotorEx.class, "R1");
+        right2 = hardwareMap.get(DcMotorEx.class, "R2");
         //set default motor directions
-        left1.setDirection(DcMotor.Direction.FORWARD);
-        left2.setDirection(DcMotor.Direction.REVERSE);
+        left1.setDirection(DcMotorEx.Direction.FORWARD);
+        left2.setDirection(DcMotorEx.Direction.REVERSE);
 
-        right1.setDirection(DcMotor.Direction.FORWARD);
-        right2.setDirection(DcMotor.Direction.REVERSE);
+        right1.setDirection(DcMotorEx.Direction.FORWARD);
+        right2.setDirection(DcMotorEx.Direction.REVERSE);
 
-        left1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        left2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        right1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        right2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        left1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        left2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        right1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        right2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+
+        left1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        left2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        right1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        right2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+
+        left1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        left2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        right1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        right2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
     }
 

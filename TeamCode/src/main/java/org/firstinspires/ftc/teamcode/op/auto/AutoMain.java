@@ -29,7 +29,7 @@ package org.firstinspires.ftc.teamcode.op.auto;
  */
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -79,10 +79,10 @@ import java.util.concurrent.TimeUnit;
 public class AutoMain extends LinearOpMode {
 
     /* Declare OpMode members. */
-    private DcMotor left1 = null;
-    private DcMotor left2 = null;
-    private DcMotor right1 = null;
-    private DcMotor right2 = null;
+    private DcMotorEx left1 = null;
+    private DcMotorEx left2 = null;
+    private DcMotorEx right1 = null;
+    private DcMotorEx right2 = null;
 
     //basic typical opmode stuff
     private ElapsedTime runtime = new ElapsedTime();
@@ -125,28 +125,27 @@ public class AutoMain extends LinearOpMode {
         initDoubleVision();
 
         // Initialize the drive system variables.
-        left1 = hardwareMap.get(DcMotor.class, "L1");
-        left2 = hardwareMap.get(DcMotor.class, "L2");
+        left1 = hardwareMap.get(DcMotorEx.class, "L1");
+        left2 = hardwareMap.get(DcMotorEx.class, "L2");
 
-        right1 = hardwareMap.get(DcMotor.class, "R1");
-        right2 = hardwareMap.get(DcMotor.class, "R2");
+        right1 = hardwareMap.get(DcMotorEx.class, "R1");
+        right2 = hardwareMap.get(DcMotorEx.class, "R2");
         //set default motor directions
-        left1.setDirection(DcMotor.Direction.FORWARD);
-        left2.setDirection(DcMotor.Direction.REVERSE);
+        left1.setDirection(DcMotorEx.Direction.FORWARD);
+        left2.setDirection(DcMotorEx.Direction.REVERSE);
 
-        right1.setDirection(DcMotor.Direction.FORWARD);
-        right2.setDirection(DcMotor.Direction.REVERSE);
+        right1.setDirection(DcMotorEx.Direction.FORWARD);
+        right2.setDirection(DcMotorEx.Direction.REVERSE);
 
-        left1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        left2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        right1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        right2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        left1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        left2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        right1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        right2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
 
-
-        left1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        left2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        right1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        right2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        left1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        left2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        right1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        right2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
         setManualExposure(6, 250);  // Use low exposure time to reduce motion blur
 
@@ -160,11 +159,10 @@ public class AutoMain extends LinearOpMode {
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
-
         //     ---     !START PROGRAM HERE !     ---
 
         //encoderDrive(DRIVE_SPEED,  12,  12, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
-
+        
         visionPortal.setProcessorEnabled(tfod, false);
         visionPortal.setProcessorEnabled(aprilTag, true);
 
@@ -238,10 +236,10 @@ public class AutoMain extends LinearOpMode {
             right2.setTargetPosition(newRight2Target);
 
             // Turn On RUN_TO_POSITION
-            left1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            left2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            right1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            right2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            left1.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+            left2.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+            right1.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+            right2.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
 
             // reset the timeout time and start motion.
             runtime.reset();
@@ -274,10 +272,10 @@ public class AutoMain extends LinearOpMode {
             right2.setPower(0);
 
             // Turn off RUN_TO_POSITION
-            left1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            left2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            right1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            right2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            left1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            left2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            right1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            right2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
             sleep(250);   // optional pause after each move.
         }
@@ -406,5 +404,4 @@ public class AutoMain extends LinearOpMode {
 
     }   // end method telemetryTfod()
 }
-
 
