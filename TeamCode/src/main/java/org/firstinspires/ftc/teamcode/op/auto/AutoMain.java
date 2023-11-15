@@ -40,10 +40,14 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.teamcode.model.Alliance;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.tfod.TfodProcessor;
+
+import org.firstinspires.ftc.teamcode.opencv.RandomizationTargetDeterminationProcessor;
+
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -86,6 +90,7 @@ public class AutoMain extends LinearOpMode {
 
     //basic typical opmode stuff
     private ElapsedTime runtime = new ElapsedTime();
+    private Alliance alliance = Alliance.BLUE;
 
     //math to make convert motor rotations to wheel distance
     static final double COUNTS_PER_MOTOR_REV = 537.6;    // neverest 20
@@ -99,6 +104,7 @@ public class AutoMain extends LinearOpMode {
     final double TURN_GAIN  =   0.01 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
 
     //super intelligent vision stuff
+    private RandomizationTargetDeterminationProcessor RTDP = new RandomizationTargetDeterminationProcessor(alliance, telemetry);
     private static final int DESIRED_TAG_ID = -1;
     private AprilTagDetection desiredTag = null;
     private WebcamName webcam1, webcam2;
@@ -164,6 +170,7 @@ public class AutoMain extends LinearOpMode {
         //encoderDrive(DRIVE_SPEED,  12,  12, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
         
         visionPortal.setProcessorEnabled(tfod, false);
+        visionPortal.setProcessorEnabled(RTDP, false);
         visionPortal.setProcessorEnabled(aprilTag, true);
 
         while (opModeIsActive()) {
@@ -312,7 +319,7 @@ public class AutoMain extends LinearOpMode {
         // Create the vision portal by using a builder.
         visionPortal = new VisionPortal.Builder()
                 .setCamera(switchableCamera)
-                .addProcessors(tfod, aprilTag)
+                .addProcessors(tfod, aprilTag, RTDP)
                 .build();
     }// end initDoubleVision()
 

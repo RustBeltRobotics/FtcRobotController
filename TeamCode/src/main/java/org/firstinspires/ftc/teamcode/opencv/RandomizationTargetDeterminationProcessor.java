@@ -9,6 +9,7 @@ import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
 import org.firstinspires.ftc.teamcode.model.Alliance;
 import org.firstinspires.ftc.teamcode.model.TargetPosition;
+import org.firstinspires.ftc.teamcode.op.auto.AutoMain;
 import org.firstinspires.ftc.vision.VisionProcessor;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -25,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RandomizationTargetDeterminationProcessor implements VisionProcessor {
+public class RandomizationTargetDeterminationProcessor extends AutoMain implements VisionProcessor {
 
     //Note: refer to https://github.com/OpenFTC/EasyOpenCV for examples of OpenCV pipelines
 
