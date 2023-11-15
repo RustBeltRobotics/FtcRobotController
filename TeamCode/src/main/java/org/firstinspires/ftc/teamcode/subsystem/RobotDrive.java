@@ -64,30 +64,30 @@ public class RobotDrive {
     }
 
     public void drive() {
-        double powerL;
-        double powerR;
+        double velL;
+        double velR;
 
         if (driveType == DriveType.ARCADE) {
             double drive = -gamepad1.left_stick_y;
             double turn = -gamepad1.right_stick_x;
-            powerL = Range.clip(drive + turn, -1.0, 1.0);
-            powerR = Range.clip(drive - turn, -1.0, 1.0);
+            velL = Range.scale(drive + turn, -1.0, 1.0, 160, -160);
+            velR = Range.scale(drive - turn, -1.0, 1.0, 160, -160);
         } else if (driveType == DriveType.TANK) {
-            powerL = -gamepad1.left_stick_y;
-            powerR = -gamepad1.right_stick_y;
+            velL = -gamepad1.left_stick_y;
+            velR = -gamepad1.right_stick_y;
         } else {
             throw new IllegalArgumentException("Unexpected drive type: " + driveType);
         }
 
         //send the resultant to the motors
-        left1.setPower(powerL);
-        left2.setPower(powerL);
-        right1.setPower(powerR);
-        right2.setPower(powerR);
+        left1.setVelocity(velL);
+        left2.setVelocity(velL);
+        right1.setVelocity(velR);
+        right2.setVelocity(velR);
 
         //log that!
         telemetry.addData("Status", "Run Time: " + runtime.toString());
-        telemetry.addData("DriveMotors", "left (%.2f), right (%.2f)", powerL, powerR);
+        telemetry.addData("DriveMotors", "left (%.2f), right (%.2f)", velL, velR);
     }
 
     public DriveType getDriveType() {

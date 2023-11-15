@@ -196,8 +196,8 @@ public class AutoMain extends LinearOpMode {
                     double  headingError = desiredTag.ftcPose.bearing;
 
                     // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
-                    drive = Range.clip(rangeError * SPEED_GAIN, -DRIVE_SPEED, DRIVE_SPEED);
-                    turn  = Range.clip(headingError * TURN_GAIN, -TURN_SPEED, TURN_SPEED) ;
+                    Range.scale(Range.clip(rangeError * SPEED_GAIN, -DRIVE_SPEED, DRIVE_SPEED),1,-1,160,-160);
+                    Range.scale(Range.clip(headingError * TURN_GAIN, -TURN_SPEED, TURN_SPEED),1,-1,160,-160);
 
                     telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", drive, turn);
                 }
@@ -243,10 +243,10 @@ public class AutoMain extends LinearOpMode {
 
             // reset the timeout time and start motion.
             runtime.reset();
-            left1.setPower(Math.abs(speed));
-            left2.setPower(Math.abs(speed));
-            right1.setPower(Math.abs(speed));
-            right2.setPower(Math.abs(speed));
+            left1.setVelocity(Math.abs(speed));
+            left2.setVelocity(Math.abs(speed));
+            right1.setVelocity(Math.abs(speed));
+            right2.setVelocity(Math.abs(speed));
 
             // keep looping while we are still active, and there is time left, and both motors are running.
             // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
@@ -357,16 +357,16 @@ public class AutoMain extends LinearOpMode {
 
         // Normalize wheel powers to be less than 1.0
         double max = Math.max(Math.abs(leftPower), Math.abs(rightPower));
-        if (max >1.0) {
+        if (max >160.0) {
             leftPower /= max;
             rightPower /= max;
         }
 
         // Send powers to the wheels.
-        left1.setPower(leftPower);
-        left2.setPower(leftPower);
-        right1.setPower(rightPower);
-        right2.setPower(rightPower);
+        left1.setVelocity(leftPower);
+        left2.setVelocity(leftPower);
+        right1.setVelocity(rightPower);
+        right2.setVelocity(rightPower);
     }
 
     private void telemetryAprilTag() {
