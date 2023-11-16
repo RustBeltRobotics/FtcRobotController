@@ -27,6 +27,9 @@ package org.firstinspires.ftc.teamcode.op.auto;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+import android.annotation.SuppressLint;
+
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -34,20 +37,17 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.teamcode.model.Alliance;
+import org.firstinspires.ftc.teamcode.opencv.RandomizationTargetDeterminationProcessor;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.tfod.TfodProcessor;
-
-import org.firstinspires.ftc.teamcode.opencv.RandomizationTargetDeterminationProcessor;
-
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -89,8 +89,8 @@ public class AutoMain extends LinearOpMode {
     private DcMotorEx right2 = null;
 
     //basic typical opmode stuff
-    private ElapsedTime runtime = new ElapsedTime();
-    private Alliance alliance = Alliance.BLUE;
+    private final ElapsedTime runtime = new ElapsedTime();
+    private final Alliance alliance = Alliance.BLUE;
 
     //math to make convert motor rotations to wheel distance
     static final double COUNTS_PER_MOTOR_REV = 537.6;    // neverest 20
@@ -104,11 +104,10 @@ public class AutoMain extends LinearOpMode {
     final double TURN_GAIN  =   0.01 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
 
     //super intelligent vision stuff
-    private RandomizationTargetDeterminationProcessor RTDP = new RandomizationTargetDeterminationProcessor(alliance, telemetry);
+    private RandomizationTargetDeterminationProcessor RTDP;
     private static final int DESIRED_TAG_ID = -1;
-    private AprilTagDetection desiredTag = null;
-    private WebcamName webcam1, webcam2;
-    private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
+    public AprilTagDetection desiredTag = null;
+    public WebcamName webcam1, webcam2;
     private AprilTagProcessor aprilTag;
     private TfodProcessor tfod;
     private VisionPortal visionPortal;
@@ -123,7 +122,7 @@ public class AutoMain extends LinearOpMode {
      */
     @Override
     public void runOpMode() {
-        boolean targetFound = false;    // Set to true when an AprilTag target is detected
+        boolean targetFound;    // Set to true when an AprilTag target is detected
         double drive = 0;        // Desired forward power/speed (-1 to +1) +ve is forward
         double turn = 0;        // Desired turning power/speed (-1 to +1) +ve is CounterClockwise
 
@@ -196,15 +195,15 @@ public class AutoMain extends LinearOpMode {
                     // This tag is NOT in the library, so we don't have enough information to track to it.
                     telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
                 }
-                if (gamepad1.left_bumper && targetFound) {
+                if (targetFound) {
 
                     // Determine heading and range error so we can use them to control the robot automatically.
                     double  rangeError   = (desiredTag.ftcPose.range - 12); //second number is desired distance from tag
                     double  headingError = desiredTag.ftcPose.bearing;
 
                     // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
-                    Range.scale(Range.clip(rangeError * SPEED_GAIN, -DRIVE_SPEED, DRIVE_SPEED),1,-1,160,-160);
-                    Range.scale(Range.clip(headingError * TURN_GAIN, -TURN_SPEED, TURN_SPEED),1,-1,160,-160);
+                    drive = Range.scale(Range.clip(rangeError * SPEED_GAIN, -DRIVE_SPEED, DRIVE_SPEED),1,-1,160,-160);
+                    turn = Range.scale(Range.clip(headingError * TURN_GAIN, -TURN_SPEED, TURN_SPEED),1,-1,160,-160);
 
                     telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", drive, turn);
                 }
@@ -289,10 +288,7 @@ public class AutoMain extends LinearOpMode {
     }
 
     public void initDoubleVision() {
-        // -----------------------------------------------------------------------------------------
         // AprilTag Configuration
-        // -----------------------------------------------------------------------------------------
-
         aprilTag = new AprilTagProcessor.Builder()
                 .build();
         // Adjust Image Decimation to trade-off detection-range for detection-rate.
@@ -303,11 +299,12 @@ public class AutoMain extends LinearOpMode {
         // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second
         // Note: Decimation can be changed on-the-fly to adapt during a match.
         aprilTag.setDecimation(2);
-        // -----------------------------------------------------------------------------------------
-        // TFOD Configuration
 
+        // TFOD Configuration
         tfod = new TfodProcessor.Builder()
                 .build();
+        //RTDP Initialization
+        RTDP = new RandomizationTargetDeterminationProcessor(alliance, telemetry);
         // -----------------------------------------------------------------------------------------
         // Camera Configuration
 
@@ -376,6 +373,7 @@ public class AutoMain extends LinearOpMode {
         right2.setVelocity(rightPower);
     }
 
+    @SuppressLint("DefaultLocale")
     private void telemetryAprilTag() {
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();
         telemetry.addData("# AprilTags Detected", currentDetections.size());
