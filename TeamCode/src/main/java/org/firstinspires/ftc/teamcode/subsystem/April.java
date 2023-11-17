@@ -29,6 +29,8 @@
 
 package org.firstinspires.ftc.teamcode.subsystem;
 
+import android.annotation.SuppressLint;
+
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -49,9 +51,9 @@ public class April {
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
-    private HardwareMap hardwareMap;
-    private Telemetry telemetry;
-    private Gamepad gamepad1;
+    private final HardwareMap hardwareMap;
+    private final Telemetry telemetry;
+    private final Gamepad gamepad1;
 
     public April(HardwareMap hardwareMap, Telemetry telemetry, Gamepad gamepad1) {
         this.hardwareMap = hardwareMap;
@@ -95,6 +97,7 @@ public class April {
     /**
      * Add telemetry about AprilTag detections.
      */
+    @SuppressLint("DefaultLocale")
     private void telemetryAprilTag() {
 
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();

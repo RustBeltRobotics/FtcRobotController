@@ -70,8 +70,8 @@ public class RobotDrive {
         if (driveType == DriveType.ARCADE) {
             double drive = -gamepad1.left_stick_y;
             double turn = -gamepad1.right_stick_x;
-            velL = Range.scale(drive + turn, -1.0, 1.0, 160, -160);
-            velR = Range.scale(drive - turn, -1.0, 1.0, 160, -160);
+            velL = Range.scale(drive + turn, -1.0, 1.0, 1, -1);
+            velR = Range.scale(drive - turn, -1.0, 1.0, 1, -1);
         } else if (driveType == DriveType.TANK) {
             velL = -gamepad1.left_stick_y;
             velR = -gamepad1.right_stick_y;
@@ -80,10 +80,15 @@ public class RobotDrive {
         }
 
         //send the resultant to the motors
-        left1.setVelocity(velL);
-        left2.setVelocity(velL);
-        right1.setVelocity(velR);
-        right2.setVelocity(velR);
+        left1.setPower(velL);
+        left2.setPower(velL);
+        right1.setPower(velR);
+        right2.setPower(velR);
+
+        telemetry.addData("l1",left1.getVelocity());
+        telemetry.addData("l2",left2.getVelocity());
+        telemetry.addData("r1",right1.getVelocity());
+        telemetry.addData("r2:",right2.getVelocity());
 
         //log that!
         telemetry.addData("Status", "Run Time: " + runtime.toString());

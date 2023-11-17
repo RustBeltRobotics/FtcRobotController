@@ -152,7 +152,7 @@ public class AutoMain extends LinearOpMode {
         right1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         right2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
-        setManualExposure(6, 250);  // Use low exposure time to reduce motion blur
+        //setManualExposure(6, 250);  // Use low exposure time to reduce motion blur
 
         // Send telemetry message to indicate successful Encoder reset
         telemetry.addData("Starting at", "%7d :%7d",
@@ -167,6 +167,8 @@ public class AutoMain extends LinearOpMode {
         //     ---     !START PROGRAM HERE !     ---
 
         //encoderDrive(DRIVE_SPEED,  12,  12, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
+
+        visionPortal.setActiveCamera(webcam2);
         
         visionPortal.setProcessorEnabled(tfod, false);
         visionPortal.setProcessorEnabled(RTDP, false);

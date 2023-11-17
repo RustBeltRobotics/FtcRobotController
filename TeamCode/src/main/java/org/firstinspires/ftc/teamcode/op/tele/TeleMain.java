@@ -15,7 +15,7 @@ public class TeleMain extends OpMode {
     private final ElapsedTime runtime = new ElapsedTime();
     private RobotArm robotArm = null;
     private RobotDrive robotDrive = null;
-    private April april = null;
+    public April april = null;
     @Override
     public void init() {
         telemetry.addData("Status", "Initializing");
