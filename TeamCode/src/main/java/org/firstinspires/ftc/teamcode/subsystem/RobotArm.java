@@ -57,7 +57,7 @@ public class RobotArm {
         arm1.setPower(powerA);
         arm2.setPower(powerA);
 
-        powerI = Range.clip(gamepad2.left_trigger, -1.0, 0) + Range.clip(gamepad2.right_trigger, 0, 1);
+        powerI = Range.clip(-gamepad2.left_trigger, -1.0, 0) + Range.clip(gamepad2.right_trigger, 0, 1);
         intake1.setPower(powerI);
 
         telemetry.addData("Status", "Run Time: " + runtime.toString());
