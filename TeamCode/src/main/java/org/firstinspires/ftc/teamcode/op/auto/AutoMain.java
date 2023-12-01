@@ -122,10 +122,6 @@ public class AutoMain extends LinearOpMode {
      */
     @Override
     public void runOpMode() {
-        boolean targetFound;    // Set to true when an AprilTag target is detected
-        double drive = 0;        // Desired forward power/speed (-1 to +1) +ve is forward
-        double turn = 0;        // Desired turning power/speed (-1 to +1) +ve is CounterClockwise
-
         // Initialize the Apriltag Detection process
         initDoubleVision();
 
@@ -166,57 +162,24 @@ public class AutoMain extends LinearOpMode {
         waitForStart();
         //     ---     !START PROGRAM HERE !     ---
 
-        //encoderDrive(DRIVE_SPEED,  12,  12, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
+        encoderDrive(DRIVE_SPEED,  24,  24, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
 
         visionPortal.setActiveCamera(webcam2);
-        
+
+        visionPortal.setProcessorEnabled(aprilTag, false);
         visionPortal.setProcessorEnabled(tfod, false);
-        visionPortal.setProcessorEnabled(RTDP, false);
-        visionPortal.setProcessorEnabled(aprilTag, true);
+        visionPortal.setProcessorEnabled(RTDP, true);
+
+        //     --PLACEHOLDER--
+        // place pixel on the spike using RTDP
 
         while (opModeIsActive()) {
-            targetFound = false;
-            desiredTag = null;
 
-            // Step through the list of detected tags and look for a matching tag
-            List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-            for (AprilTagDetection detection : currentDetections) {
-                // Look to see if we have size info on this tag.
-                if (detection.metadata != null) {
-                    //  Check to see if we want to track towards this tag.
-                    if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID)) {
-                        // Yes, we want to use this tag.
-                        targetFound = true;
-                        desiredTag = detection;
-                        break;  // don't look any further.
-                    } else {
-                        // This tag is in the library, but we do not want to track it right now.
-                        telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
-                    }
-                } else {
-                    // This tag is NOT in the library, so we don't have enough information to track to it.
-                    telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
-                }
-                if (targetFound) {
+            //TELEMETRY
+            telemetryAprilTag();
+            telemetry.update();
 
-                    // Determine heading and range error so we can use them to control the robot automatically.
-                    double  rangeError   = (desiredTag.ftcPose.range - 12); //second number is desired distance from tag
-                    double  headingError = desiredTag.ftcPose.bearing;
-
-                    // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
-                    drive = Range.scale(Range.clip(rangeError * SPEED_GAIN, -DRIVE_SPEED, DRIVE_SPEED),1,-1,160,-160);
-                    turn = Range.scale(Range.clip(headingError * TURN_GAIN, -TURN_SPEED, TURN_SPEED),1,-1,160,-160);
-
-                    telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", drive, turn);
-                }
-                telemetry.update();
-
-                // Apply desired axes motions to the drivetrain.
-                moveRobot(drive, turn);
-                sleep(10);
-            }
-
-            telemetry.addData("Path", "Complete");
+            //telemetry.addData("Path", "Complete");
             telemetry.update();
             sleep(1000);  // pause to display final telemetry message.
         }
@@ -291,7 +254,7 @@ public class AutoMain extends LinearOpMode {
 
     public void initDoubleVision() {
         // AprilTag Configuration
-        aprilTag = new AprilTagProcessor.Builder()
+        aprilTag = new AprilTagProcessor.Builder().setLensIntrinsics(678.154, 678.17, 318.135, 228.374)
                 .build();
         // Adjust Image Decimation to trade-off detection-range for detection-rate.
         // eg: Some typical detection data using a Logitech C920 WebCam
@@ -410,5 +373,42 @@ public class AutoMain extends LinearOpMode {
         }   // end for() loop
 
     }   // end method telemetryTfod()
+
+    private  void runApril(){
+        boolean targetFound = false;    // Set to true when an AprilTag target is detected
+        desiredTag = null;
+
+        // Step through the list of detected tags and look for a matching tag
+        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+        for (AprilTagDetection detection : currentDetections) {
+            // Look to see if we have size info on this tag.
+            if (detection.metadata != null) {
+                //  Check to see if we want to track towards this tag.
+                if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID)) {
+                    // Yes, we want to use this tag.
+                    targetFound = true;
+                    desiredTag = detection;
+                    break;  // don't look any further.
+                } else {
+                    // This tag is in the library, but we do not want to track it right now.
+                    telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
+                }
+            } else {
+                // This tag is NOT in the library, so we don't have enough information to track to it.
+                telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
+            }
+            if (targetFound) {
+
+                // Determine heading and range error so we can use them to control the robot automatically.
+                double  rangeError   = (desiredTag.ftcPose.range - 12); //second number is desired distance from tag
+                double  headingError = desiredTag.ftcPose.bearing;
+
+                // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
+                double drive = Range.scale(Range.clip(rangeError * SPEED_GAIN, -DRIVE_SPEED, DRIVE_SPEED),1,-1,160,-160);
+                double turn = Range.scale(Range.clip(headingError * TURN_GAIN, -TURN_SPEED, TURN_SPEED),1,-1,160,-160);
+
+                telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", drive, turn);
+            }
+    }
 }
 
