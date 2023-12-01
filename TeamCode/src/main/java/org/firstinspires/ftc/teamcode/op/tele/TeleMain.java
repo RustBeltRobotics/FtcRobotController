@@ -16,6 +16,8 @@ public class TeleMain extends OpMode {
     private RobotArm robotArm = null;
     private RobotDrive robotDrive = null;
     public April april = null;
+    private boolean autoBrake = false;
+    private double brakeDistance = 5.0;
     @Override
     public void init() {
         telemetry.addData("Status", "Initializing");
@@ -37,7 +39,8 @@ public class TeleMain extends OpMode {
     public void start() { runtime.reset(); }
     //code to loop between PLAY and STOP buttons
     public void loop() {
-        robotDrive.drive();
+        autoBrake = april.autoBrake(brakeDistance);
+        robotDrive.drive(autoBrake);
         robotArm.loop();
     }
     @Override

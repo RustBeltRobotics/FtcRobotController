@@ -94,6 +94,18 @@ public class April {
 
     }   // end method initAprilTag()
 
+    //look to see how close we are to the scoring board and set the brake accordingly
+    public boolean autoBrake(double brakeDistance) {
+        boolean brake = false;
+        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+        for(AprilTagDetection detection : currentDetections) {
+            if(detection.id>0 && detection.id<7 ) {
+                if(detection.ftcPose.range < brakeDistance){ brake = true; }
+            }
+        }
+        return brake;
+    }
+
     /**
      * Add telemetry about AprilTag detections.
      */

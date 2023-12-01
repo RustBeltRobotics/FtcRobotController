@@ -9,11 +9,13 @@ import org.firstinspires.ftc.teamcode.subsystem.RobotArm;
 import org.firstinspires.ftc.teamcode.subsystem.RobotDrive;
 
 public abstract class TeleOpParent extends OpMode {
+    protected double autoBrakeDistance = 5.0; //placeholder value until field tuning is done :)
 
     protected final ElapsedTime runtime = new ElapsedTime();
     protected RobotArm robotArm = null;
     protected RobotDrive robotDrive = null;
     protected April april = null;
+    protected boolean autoBrake = false;
 
     @Override
     public void init() {
@@ -33,8 +35,9 @@ public abstract class TeleOpParent extends OpMode {
 
     @Override
     public void loop() {
+        autoBrake = april.autoBrake(autoBrakeDistance);
         robotArm.loop();
-        robotDrive.drive();
+        robotDrive.drive(autoBrake);
     }
 
     public abstract DriveType getDriveType();

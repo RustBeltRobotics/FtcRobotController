@@ -8,6 +8,9 @@ import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.model.DriveType;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 /**
  * Subsystem for Drivetrain
@@ -63,20 +66,33 @@ public class RobotDrive {
 
     }
 
-    public void drive() {
+    public void drive(boolean autoBrake) {
         double velL;
         double velR;
-
-        if (driveType == DriveType.ARCADE) {
-            double drive = -gamepad1.left_stick_y;
-            double turn = gamepad1.right_stick_x;
-            velL = Range.scale(drive + turn, -1.0, 1.0, 1, -1);
-            velR = Range.scale(drive - turn, -1.0, 1.0, 1, -1);
-        } else if (driveType == DriveType.TANK) {
-            velL = -gamepad1.left_stick_y;
-            velR = -gamepad1.right_stick_y;
-        } else {
-            throw new IllegalArgumentException("Unexpected drive type: " + driveType);
+        if (autoBrake == false){
+            if (driveType == DriveType.ARCADE) {
+                double drive = -gamepad1.left_stick_y;
+                double turn = gamepad1.right_stick_x;
+                velL = Range.scale(drive + turn, -1.0, 1.0, 1, -1);
+                velR = Range.scale(drive - turn, -1.0, 1.0, 1, -1);
+            } else if (driveType == DriveType.TANK) {
+                velL = -gamepad1.left_stick_y;
+                velR = -gamepad1.right_stick_y;
+            } else {
+                throw new IllegalArgumentException("Unexpected drive type: " + driveType);
+            }
+        } else{
+            if (driveType == DriveType.ARCADE) {
+                double drive = -gamepad1.left_stick_y;
+                double turn = gamepad1.right_stick_x;
+                velL = Range.scale(drive + turn, -1.0, 1.0, .2, -1);
+                velR = Range.scale(drive - turn, -1.0, 1.0, .2, -1);
+            } else if (driveType == DriveType.TANK) {
+                velL = -gamepad1.left_stick_y;
+                velR = -gamepad1.right_stick_y;
+            } else {
+                throw new IllegalArgumentException("Unexpected drive type: " + driveType);
+            }
         }
 
         //send the resultant to the motors
@@ -94,6 +110,7 @@ public class RobotDrive {
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.addData("DriveMotors", "left (%.2f), right (%.2f)", velL, velR);
     }
+
 
     public DriveType getDriveType() {
         return driveType;
