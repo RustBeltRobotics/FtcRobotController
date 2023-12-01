@@ -400,15 +400,16 @@ public class AutoMain extends LinearOpMode {
             if (targetFound) {
 
                 // Determine heading and range error so we can use them to control the robot automatically.
-                double  rangeError   = (desiredTag.ftcPose.range - 12); //second number is desired distance from tag
-                double  headingError = desiredTag.ftcPose.bearing;
+                double rangeError = (desiredTag.ftcPose.range - 12); //second number is desired distance from tag
+                double headingError = desiredTag.ftcPose.bearing;
 
                 // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
-                double drive = Range.scale(Range.clip(rangeError * SPEED_GAIN, -DRIVE_SPEED, DRIVE_SPEED),1,-1,160,-160);
-                double turn = Range.scale(Range.clip(headingError * TURN_GAIN, -TURN_SPEED, TURN_SPEED),1,-1,160,-160);
+                double drive = Range.scale(Range.clip(rangeError * SPEED_GAIN, -DRIVE_SPEED, DRIVE_SPEED), 1, -1, 160, -160);
+                double turn = Range.scale(Range.clip(headingError * TURN_GAIN, -TURN_SPEED, TURN_SPEED), 1, -1, 160, -160);
 
-                telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", drive, turn);
+                telemetry.addData("Auto", "Drive %5.2f, Turn %5.2f", drive, turn);
             }
+        }
     }
 }
 
