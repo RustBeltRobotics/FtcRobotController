@@ -2,9 +2,12 @@ package org.firstinspires.ftc.teamcode.op.auto;
 
 import android.annotation.SuppressLint;
 
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -13,8 +16,11 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.teamcode.model.Alliance;
+import org.firstinspires.ftc.teamcode.model.TargetPosition;
 import org.firstinspires.ftc.teamcode.opencv.RandomizationTargetDeterminationProcessor;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
@@ -33,6 +39,7 @@ public class AutoMain extends LinearOpMode {
     private DcMotorEx left2 = null;
     private DcMotorEx right1 = null;
     private DcMotorEx right2 = null;
+    private IMU imu = null;
 
     //basic typical opmode stuff
     private final ElapsedTime runtime = new ElapsedTime();
@@ -43,11 +50,19 @@ public class AutoMain extends LinearOpMode {
     static final double DRIVE_GEAR_REDUCTION = (15.0 / 20.0);     // No External Gearing.
     static final double WHEEL_DIAMETER_INCHES = 4.0;     // For figuring circumference
     static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
-    //speeds
-    static final double DRIVE_SPEED = 0.1;
-    static final double TURN_SPEED = 0.5;
+    //----------------------------------------------------------------------------------------------
+    //                                       CONFIG VARS
+    //----------------------------------------------------------------------------------------------
+
+    private String startingPositionLetter = "A";
+    private int startingPositionNumber = 2;
+    static final double DRIVE_SPEED = 5;
+    static double TURN_SPEED = 0.5;
     final double SPEED_GAIN =   0.02 ;   //  Speed Control "Gain". eg: Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
-    final double TURN_GAIN  =   0.01 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+    final double TURN_GAIN  =   0.0005 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+    private double  targetHeading = 0;
+    private double headingError = 0.0;
+    static double HEADING_THRESHOLD = 5.0 ; // How close must the heading get to the target before moving to next step.
 
     //super intelligent vision stuff
     private RandomizationTargetDeterminationProcessor RTDP;
@@ -62,7 +77,6 @@ public class AutoMain extends LinearOpMode {
     private double positionX;
     private double positionY;
     private double robotBearing;
-
     @Override
     public void runOpMode() {
         // Initialize the Apriltag Detection process
@@ -75,11 +89,16 @@ public class AutoMain extends LinearOpMode {
         right1 = hardwareMap.get(DcMotorEx.class, "R1");
         right2 = hardwareMap.get(DcMotorEx.class, "R2");
         //set default motor directions
-        left1.setDirection(DcMotorEx.Direction.FORWARD);
-        left2.setDirection(DcMotorEx.Direction.REVERSE);
+        left1.setDirection(DcMotorEx.Direction.REVERSE);
+        left2.setDirection(DcMotorEx.Direction.FORWARD);
 
-        right1.setDirection(DcMotorEx.Direction.FORWARD);
-        right2.setDirection(DcMotorEx.Direction.REVERSE);
+        right1.setDirection(DcMotorEx.Direction.REVERSE);
+        right2.setDirection(DcMotorEx.Direction.FORWARD);
+
+        left1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        left2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        right1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        right2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
         left1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         left2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
@@ -102,19 +121,29 @@ public class AutoMain extends LinearOpMode {
         telemetry.update();
 
         // Wait for the game to start (driver presses PLAY)
+
+        initPose(startingPositionLetter, startingPositionNumber);
+
         waitForStart();
 
         //------------------------------------------------------------------------------------------
         //                               ! START ROUTINE HERE !
         //------------------------------------------------------------------------------------------
 
-        encoderDrive(DRIVE_SPEED,  24,  24, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
+        dumbDrive(DRIVE_SPEED,  24,  24, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
 
         visionPortal.setActiveCamera(webcam2);
 
         visionPortal.setProcessorEnabled(aprilTag, false);
         visionPortal.setProcessorEnabled(tfod, false);
-        visionPortal.setProcessorEnabled(RTDP, true);
+        visionPortal.setProcessorEnabled(RTDP, false);
+
+
+        RTDP.setDetectedPosition(TargetPosition.LEFT);
+        while (RTDP.getDetectedPosition() == null){
+           telemetry.addData("Status", "looking for target");
+           telemetry.update();
+        }
 
         //     --PLACEHOLDER--
         // place pixel on the spike using RTDP
@@ -122,22 +151,37 @@ public class AutoMain extends LinearOpMode {
         visionPortal.setProcessorEnabled(RTDP, false);
         visionPortal.setProcessorEnabled(aprilTag, true);
 
+        int targetAprilId = scoringTag(RTDP.getDetectedPosition());
+
+        if (alliance == Alliance.BLUE) {
+            smartDrive(-24.0, 30.5);
+            smartDrive(24, 30.5);
+
+            goToTag(targetAprilId);
+            turnToHeading(1, 0);
+
+            //hypothetically place the pixel on the board
+
+
+        } else {
+            //red code
+        }
+
 
 
         while (opModeIsActive()) {
-
             //TELEMETRY
-            telemetryAprilTag();
+            telemetry.addData("Heading err", headingError);
+            telemetry.addData("Heading", getHeading());
             telemetry.update();
-
             //telemetry.addData("Path", "Complete");
-            telemetry.update();
+            //telemetry.update();
             sleep(1000);  // pause to display final telemetry message.
         }
     }
-    public void encoderDrive(double speed,
-                             double leftInches, double rightInches,
-                             double timeoutS) {
+    public void dumbDrive(double speed,
+                          double leftInches, double rightInches,
+                          double timeoutS) {
 
         int newLeft1Target;
         int newLeft2Target;
@@ -165,10 +209,10 @@ public class AutoMain extends LinearOpMode {
 
             // reset the timeout time and start motion.
             runtime.reset();
-            left1.setVelocity(Math.abs(speed));
-            left2.setVelocity(Math.abs(speed));
-            right1.setVelocity(Math.abs(speed));
-            right2.setVelocity(Math.abs(speed));
+            left1.setPower(Math.abs(speed));
+            left2.setPower(Math.abs(speed));
+            right1.setPower(Math.abs(speed));
+            right2.setPower(Math.abs(speed));
 
             // keep looping while we are still active, and there is time left, and both motors are running.
             // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
@@ -184,7 +228,11 @@ public class AutoMain extends LinearOpMode {
                 telemetry.addData("Running to", " %7d :%7d", newLeft1Target, newRight1Target);
                 telemetry.addData("Currently at", " at %7d :%7d",
                         left1.getCurrentPosition(), right1.getCurrentPosition());
+
+                telemetry.addData("Heading err", headingError);
+                telemetry.addData("Heading", getHeading());
                 telemetry.update();
+
             }
 
             // Stop all motion;
@@ -283,10 +331,10 @@ public class AutoMain extends LinearOpMode {
         }
 
         // Send powers to the wheels.
-        left1.setVelocity(leftPower);
-        left2.setVelocity(leftPower);
-        right1.setVelocity(rightPower);
-        right2.setVelocity(rightPower);
+        left1.setPower(leftPower);
+        left2.setPower(leftPower);
+        right1.setPower(rightPower);
+        right2.setPower(rightPower);
     }
 
     @SuppressLint("DefaultLocale")
@@ -355,7 +403,6 @@ public class AutoMain extends LinearOpMode {
                  * use RobotAutoDriveByGyro_Linear as an example to write some path planning code (maybe)
                  */
 
-
                 positionX = (chosenTag.rawPose.x + chosenTag.ftcPose.x);
                 positionY = (chosenTag.rawPose.y + chosenTag.ftcPose.y);  //I made this up I have no idea if it works
 
@@ -363,7 +410,7 @@ public class AutoMain extends LinearOpMode {
             }
         }
     }
-    private  void runApril(int iWantThisOne){
+    private  void goToTag(int iWantThisOne){
         boolean targetFound = false;    // Set to true when an AprilTag target is detected
         chosenTag = null;
 
@@ -391,14 +438,107 @@ public class AutoMain extends LinearOpMode {
 
                 // Determine heading and range error so we can use them to control the robot automatically.
                 double rangeError = (chosenTag.ftcPose.range - 12); //second number is desired distance from tag
-                double headingError = chosenTag.ftcPose.bearing;
-
-                // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
-                double drive = Range.scale(Range.clip(rangeError * SPEED_GAIN, -DRIVE_SPEED, DRIVE_SPEED), 1, -1, 160, -160);
-                double turn = Range.scale(Range.clip(headingError * TURN_GAIN, -TURN_SPEED, TURN_SPEED), 1, -1, 160, -160);
-
-                telemetry.addData("Auto", "Drive %5.2f, Turn %5.2f", drive, turn);
+                double headingError = -chosenTag.ftcPose.bearing;
+                //take 9 inches off of the raw position to adjust for robot length and
+                //TODO: ADJUST THE -9 TO ACCOUNT FOR THE ARM LENGTH
+                smartDrive(chosenTag.rawPose.x-9,chosenTag.rawPose.y);
             }
         }
+    }
+    public void initPose(String startingPositionY, int startingPositionX){
+        double[] arrayOfPossibilities = {-30.0,-18.0,-6.0,6.0,18.0,30.0};
+        double A = 28.0;
+        double F = -28.0;
+        double YstartPos = 0;
+
+        switch (startingPositionY.substring(0,1)){
+            case "A":
+                YstartPos = 28.0;
+                break;
+            case "F":
+                YstartPos = -28.0;
+                break;
+        }
+
+        positionY = YstartPos;
+        positionX = arrayOfPossibilities[startingPositionX - 1];
+
+        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
+        RevHubOrientationOnRobot.UsbFacingDirection  usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.UP;
+        RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
+
+        // Now initialize the IMU with this mounting orientation
+        // This sample expects the IMU to be in a REV Hub and named "imu".
+        imu = hardwareMap.get(IMU.class, "imu");
+        imu.initialize(new IMU.Parameters(orientationOnRobot));
+
+        imu.resetYaw();
+
+
+
+        //TODO: ADD ROBOT CENTER OFFSET FROM CONTROLLER IMU
+    }
+    public double getSteeringCorrection(double desiredHeading, double proportionalGain) {
+        targetHeading = desiredHeading;  // Save for telemetry
+
+        // Determine the heading current error
+        headingError = (targetHeading - getHeading());
+
+        // Normalize the error to be within +/- 180 degrees
+        while (headingError > 180)  headingError -= 360;
+        while (headingError <= -180) headingError += 360;
+
+        // Multiply the error by the gain to determine the required steering correction/  Limit the result to +/- 1.0
+        return Range.clip(headingError * proportionalGain, -1, 1);
+    }
+    public void turnToHeading(double maxTurnSpeed, double heading) {
+
+        // Run getSteeringCorrection() once to pre-calculate the current error
+        getSteeringCorrection(heading, TURN_GAIN);
+
+        // keep looping while we are still active, and not on heading.
+        while (opModeIsActive() && (Math.abs(headingError) > HEADING_THRESHOLD)) {
+
+            // Determine required steering to keep on heading
+            TURN_SPEED = getSteeringCorrection(heading, TURN_GAIN);
+
+            // Clip the speed to the maximum permitted value.
+            TURN_SPEED = Range.clip(TURN_SPEED, -maxTurnSpeed, maxTurnSpeed);
+
+            // Pivot in place by applying the turning correction
+            moveRobot(0, TURN_SPEED);
+        }
+
+        // Stop all motion;
+        moveRobot(0, 0);
+    }
+    public double getHeading() {
+        YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+        if (alliance == Alliance.BLUE) {
+            return -(orientation.getYaw(AngleUnit.DEGREES) + 270);
+        } else {
+            return -(orientation.getYaw(AngleUnit.DEGREES) + 90);
+        }
+    }
+    private void smartDrive(double X, double Y) {
+        double triX = positionX - X;
+        double triY = positionY - Y;
+
+        double headingIWant = Math.atan2(triY, triX);
+        turnToHeading(1, headingIWant);
+
+        double range = Math.sqrt((Math.pow(triX,2) + (Math.pow(triY, 2))));
+        dumbDrive(1,range,range,30);
+    }
+    private int scoringTag(TargetPosition targetPos) {
+         switch (targetPos){
+            case LEFT:
+                return alliance == Alliance.BLUE ? 1 : 4;
+            case CENTER:
+                return alliance == Alliance.BLUE ? 2 : 5;
+            case RIGHT:
+                return alliance == Alliance.BLUE ? 3 : 6;
+        }
+     return -1;
     }
 }

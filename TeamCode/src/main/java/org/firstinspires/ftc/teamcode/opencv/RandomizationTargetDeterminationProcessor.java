@@ -69,7 +69,7 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
     public void init(int width, int height, CameraCalibration calibration) {
         int topRegionWidth = width - (2 * SIDE_REGION_WIDTH);
         leftRegion = new Rect(new Point(0, TOP_REGION_HEIGHT), new Point(SIDE_REGION_WIDTH, height - 1));
-        centerRegion = new Rect(new Point(SIDE_REGION_WIDTH, 0), new Point(width - topRegionWidth, TOP_REGION_HEIGHT));
+        centerRegion = new Rect(new Point(SIDE_REGION_WIDTH, 0), new Point(width + topRegionWidth, TOP_REGION_HEIGHT));
         rightRegion = new Rect(new Point(width - SIDE_REGION_WIDTH, TOP_REGION_HEIGHT), new Point(width - 1, height - 1));
     }
 
@@ -189,6 +189,10 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
 
     public Recognition getPixelRecognition() {
         return pixelRecognition;
+    }
+
+    public void setDetectedPosition(TargetPosition detectedPosition) {
+        this.detectedPosition = detectedPosition;
     }
 
     public void setPixelRecognition(Recognition pixelRecognition) {
