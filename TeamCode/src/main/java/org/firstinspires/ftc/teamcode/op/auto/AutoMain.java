@@ -52,11 +52,16 @@ public class AutoMain extends LinearOpMode {
     //super intelligent vision stuff
     private RandomizationTargetDeterminationProcessor RTDP;
     private static final int DESIRED_TAG_ID = -1;
-    public AprilTagDetection desiredTag = null;
+    public AprilTagDetection chosenTag = null;
     public WebcamName webcam1, webcam2;
     private AprilTagProcessor aprilTag;
     private TfodProcessor tfod;
     private VisionPortal visionPortal;
+
+    // irobot
+    private double positionX;
+    private double positionY;
+    private double robotBearing;
 
     @Override
     public void runOpMode() {
@@ -98,7 +103,10 @@ public class AutoMain extends LinearOpMode {
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
-        //     ---     !START PROGRAM HERE !     ---
+
+        //------------------------------------------------------------------------------------------
+        //                               ! START ROUTINE HERE !
+        //------------------------------------------------------------------------------------------
 
         encoderDrive(DRIVE_SPEED,  24,  24, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
 
@@ -110,6 +118,11 @@ public class AutoMain extends LinearOpMode {
 
         //     --PLACEHOLDER--
         // place pixel on the spike using RTDP
+
+        visionPortal.setProcessorEnabled(RTDP, false);
+        visionPortal.setProcessorEnabled(aprilTag, true);
+
+
 
         while (opModeIsActive()) {
 
@@ -312,9 +325,10 @@ public class AutoMain extends LinearOpMode {
 
     }   // end method telemetryTfod()
 
+    //this is a No-Argument constructor which updates the consciousness of the self aware super-robot in 3D-space
     private  void runApril(){
         boolean targetFound = false;    // Set to true when an AprilTag target is detected
-        desiredTag = null;
+        chosenTag = null;
 
         // Step through the list of detected tags and look for a matching tag
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();
@@ -322,10 +336,48 @@ public class AutoMain extends LinearOpMode {
             // Look to see if we have size info on this tag.
             if (detection.metadata != null) {
                 //  Check to see if we want to track towards this tag.
-                if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID)) {
+                                            //tags 7&10 are the big AprilTags for the playing field wall
+                if ((DESIRED_TAG_ID < 0) || (detection.id == 7 || detection.id == 10)) {
                     // Yes, we want to use this tag.
                     targetFound = true;
-                    desiredTag = detection;
+                    chosenTag = detection;
+                    break;  // don't look any further.
+                } else {
+                    // This tag is in the library, but we do not want to track it right now.
+                    telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
+                }
+            } else {
+                // This tag is NOT in the library, so we don't have enough information to track to it.
+                telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
+            }
+            if (targetFound) {
+                /*TODO: do math to figure out our position
+                 * use RobotAutoDriveByGyro_Linear as an example to write some path planning code (maybe)
+                 */
+
+
+                positionX = (chosenTag.rawPose.x + chosenTag.ftcPose.x);
+                positionY = (chosenTag.rawPose.y + chosenTag.ftcPose.y);  //I made this up I have no idea if it works
+
+
+            }
+        }
+    }
+    private  void runApril(int iWantThisOne){
+        boolean targetFound = false;    // Set to true when an AprilTag target is detected
+        chosenTag = null;
+
+        // Step through the list of detected tags and look for a matching tag
+        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+        for (AprilTagDetection detection : currentDetections) {
+            // Look to see if we have size info on this tag.
+            if (detection.metadata != null) {
+                //  Check to see if we want to track towards this tag.
+                //tags 7-10 are the AprilTags for the playing field wall
+                if ((iWantThisOne < 0) || detection.id == iWantThisOne) {
+                    // Yes, we want to use this tag.
+                    targetFound = true;
+                    chosenTag = detection;
                     break;  // don't look any further.
                 } else {
                     // This tag is in the library, but we do not want to track it right now.
@@ -338,8 +390,8 @@ public class AutoMain extends LinearOpMode {
             if (targetFound) {
 
                 // Determine heading and range error so we can use them to control the robot automatically.
-                double rangeError = (desiredTag.ftcPose.range - 12); //second number is desired distance from tag
-                double headingError = desiredTag.ftcPose.bearing;
+                double rangeError = (chosenTag.ftcPose.range - 12); //second number is desired distance from tag
+                double headingError = chosenTag.ftcPose.bearing;
 
                 // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
                 double drive = Range.scale(Range.clip(rangeError * SPEED_GAIN, -DRIVE_SPEED, DRIVE_SPEED), 1, -1, 160, -160);
@@ -350,4 +402,3 @@ public class AutoMain extends LinearOpMode {
         }
     }
 }
-
