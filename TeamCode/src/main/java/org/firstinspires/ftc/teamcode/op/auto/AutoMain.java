@@ -199,9 +199,13 @@ public class AutoMain extends LinearOpMode {
             //TELEMETRY
             telemetry.addData("Heading err:", headingError);
             telemetry.addData("Heading:", getHeading());
-            telemetry.addData("arm reading:", intake1.getCurrentPosition());
-            telemetry.update();
-            sleep(1000);  // pause to display final telemetry message.
+            telemetry.addData("X", positionX);
+            telemetry.addData("Y", positionY);
+            telemetry.addData("L1 encoder",left1.getCurrentPosition());
+            telemetry.addData("R1 encoder",right1.getCurrentPosition());
+            telemetry.addData("arm1 encoder",arm1.getCurrentPosition());
+            telemetry.addData("intake encoder",intake1.getCurrentPosition());
+            sleep(100);  // pause to display final telemetry message.
         }
     }
     public void dumbDrive(double speed,
