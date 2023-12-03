@@ -6,7 +6,6 @@ import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -20,7 +19,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.teamcode.model.Alliance;
-import org.firstinspires.ftc.teamcode.model.RandomizationItem;
 import org.firstinspires.ftc.teamcode.model.TargetPosition;
 import org.firstinspires.ftc.teamcode.opencv.RandomizationTargetDeterminationProcessor;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -34,30 +32,14 @@ import java.util.concurrent.TimeUnit;
 @Autonomous(name="Auto-comp", group="Robot")
 //@Disabled
 public class AutoMain extends LinearOpMode {
-
-    /* Declare OpMode members. */
-    private DcMotorEx left1 = null;
-    private DcMotorEx left2 = null;
-    private DcMotorEx right1 = null;
-    private DcMotorEx right2 = null;
-    private IMU imu = null;
-
-    //basic typical opmode stuff
-    private final ElapsedTime runtime = new ElapsedTime();
-    private final Alliance alliance = Alliance.BLUE;
-    private final RandomizationItem randomizationItem = RandomizationItem.PIXEL;
-
-    //math to make convert motor rotations to wheel distance
-    static final double COUNTS_PER_MOTOR_REV = 537.6;    // neverest 20
-    static final double DRIVE_GEAR_REDUCTION = (15.0 / 20.0);     // No External Gearing.
-    static final double WHEEL_DIAMETER_INCHES = 4.0;     // For figuring circumference
-    static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
     //----------------------------------------------------------------------------------------------
     //                                       CONFIG VARS
     //----------------------------------------------------------------------------------------------
 
+    //starting positions as defined in the back of game-manual-part-2-traditional
     private String startingPositionLetter = "A";
     private int startingPositionNumber = 2;
+    //tuning variables for movement
     static final double DRIVE_SPEED = 5;
     static double TURN_SPEED = 0.5;
     final double SPEED_GAIN =   0.02 ;   //  Speed Control "Gain". eg: Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
@@ -65,6 +47,29 @@ public class AutoMain extends LinearOpMode {
     private double  targetHeading = 0;
     private double headingError = 0.0;
     static double HEADING_THRESHOLD = 5.0 ; // How close must the heading get to the target before moving to next step.
+    //----------------------------------------------------------------------------------------------
+
+    /* Declare OpMode members. */
+    private DcMotorEx left1 = null;
+    private DcMotorEx left2 = null;
+    private DcMotorEx right1 = null;
+    private DcMotorEx right2 = null;
+    private DcMotorEx arm1 = null;
+    private DcMotorEx arm2 = null;
+    private DcMotorEx intake1 = null;
+
+    private IMU imu = null;
+
+    //basic typical opmode stuff
+    private final ElapsedTime runtime = new ElapsedTime();
+    private final Alliance alliance = Alliance.BLUE;
+
+    //math to make convert motor rotations to wheel distance
+    static final double COUNTS_PER_MOTOR_REV = 537.6;    // neverest 20
+    static final double DRIVE_GEAR_REDUCTION = (15.0 / 20.0);     // No External Gearing.
+    static final double WHEEL_DIAMETER_INCHES = 4.0;     // For figuring circumference
+    static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
+
 
     //super intelligent vision stuff
     private RandomizationTargetDeterminationProcessor RTDP;
@@ -90,27 +95,42 @@ public class AutoMain extends LinearOpMode {
 
         right1 = hardwareMap.get(DcMotorEx.class, "R1");
         right2 = hardwareMap.get(DcMotorEx.class, "R2");
+
+        arm1 = hardwareMap.get(DcMotorEx.class, "A1");
+        arm2 = hardwareMap.get(DcMotorEx.class, "A2");
+
+        intake1 = hardwareMap.get(DcMotorEx.class, "I1");
+
         //set default motor directions
         left1.setDirection(DcMotorEx.Direction.REVERSE);
         left2.setDirection(DcMotorEx.Direction.FORWARD);
-
         right1.setDirection(DcMotorEx.Direction.REVERSE);
         right2.setDirection(DcMotorEx.Direction.FORWARD);
+        arm1.setDirection(DcMotorEx.Direction.FORWARD);
+        arm2.setDirection(DcMotorEx.Direction.REVERSE);
+        intake1.setDirection(DcMotorEx.Direction.FORWARD);
 
         left1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         left2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         right1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         right2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        arm1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        arm2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        intake1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
         left1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         left2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         right1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         right2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        arm1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        arm2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
 
         left1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         left2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         right1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         right2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        arm1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        arm2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
         //setManualExposure(6, 250);  // Use low exposure time to reduce motion blur
 
@@ -120,11 +140,12 @@ public class AutoMain extends LinearOpMode {
                 left2.getCurrentPosition(),
                 right1.getCurrentPosition(),
                 right2.getCurrentPosition());
+        telemetry.addData("intake pos:", intake1.getCurrentPosition());
         telemetry.update();
 
-        // Wait for the game to start (driver presses PLAY)
-
         initPose(startingPositionLetter, startingPositionNumber);
+
+        // Wait for the game to start (driver presses PLAY)
 
         waitForStart();
 
@@ -132,7 +153,7 @@ public class AutoMain extends LinearOpMode {
         //                               ! START ROUTINE HERE !
         //------------------------------------------------------------------------------------------
 
-        dumbDrive(DRIVE_SPEED,  24,  24, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
+        dumbDrive(DRIVE_SPEED,  12,  12, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
 
         visionPortal.setActiveCamera(webcam2);
 
@@ -140,14 +161,17 @@ public class AutoMain extends LinearOpMode {
         visionPortal.setProcessorEnabled(tfod, false);
         visionPortal.setProcessorEnabled(RTDP, true);
 
-//        RTDP.setDetectedPosition(TargetPosition.LEFT);
+
+        //RTDP.setDetectedPosition(TargetPosition.LEFT);
         while (RTDP.getDetectedPosition() == null){
-           telemetry.addData("Status", "looking for target");
+           telemetry.addData("Status", "you can hide but you cant run ( where is the tape :( )");
            telemetry.update();
         }
 
-        //     --PLACEHOLDER--
-        // place pixel on the spike using RTDP
+        //TODO: move intake to the spike using RTDP
+
+        outtake(1);
+        updatePosApril(); //update position with big april tags
 
         visionPortal.setProcessorEnabled(RTDP, false);
         visionPortal.setProcessorEnabled(aprilTag, true);
@@ -161,22 +185,20 @@ public class AutoMain extends LinearOpMode {
             goToTag(targetAprilId);
             turnToHeading(1, 0);
 
-            //hypothetically place the pixel on the board
+            moveArm("scoring");
+            outtake(1);
 
-
-        } else {
+        } else { //fun fact the alliance will be red
             //red code
+            telemetry.addData("Status:","PLEASE I WANT TO BE BLUE TURN IT BACK TURN IT BACK");
         }
-
-
 
         while (opModeIsActive()) {
             //TELEMETRY
-            telemetry.addData("Heading err", headingError);
-            telemetry.addData("Heading", getHeading());
+            telemetry.addData("Heading err:", headingError);
+            telemetry.addData("Heading:", getHeading());
+            telemetry.addData("arm reading:", intake1.getCurrentPosition());
             telemetry.update();
-            //telemetry.addData("Path", "Complete");
-            //telemetry.update();
             sleep(1000);  // pause to display final telemetry message.
         }
     }
@@ -251,8 +273,37 @@ public class AutoMain extends LinearOpMode {
             sleep(250);   // optional pause after each move.
         }
     }
+    // *NEW* moves the arm into one of two super convenient positions !
+    private void moveArm(String thingToDo){
+        int scoringPos = 0;  //TODO: add real values for these
+        int intakePos = 0;
 
-    public void initDoubleVision() {
+        // Turn On RUN_TO_POSITION
+        arm1.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        arm2.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+
+        if (thingToDo == "scoring"){
+            arm1.setTargetPosition(scoringPos);
+            arm2.setTargetPosition(scoringPos);
+        } else if (thingToDo == "intake") {
+            arm1.setTargetPosition(intakePos);
+            arm2.setTargetPosition(intakePos);
+        } else { telemetry.addData("moveArm() err:", "invalid value given"); telemetry.update(); }
+    }
+    private void outtake(int numPixels){
+        int target = 0;
+        int magicNumber = 0; //magicNumber is the distance the intake encoder has to move for a pixel to be outtaken
+        //figure out how many pixels we want to drop
+        if (numPixels == 1) {
+            target = arm1.getCurrentPosition() + magicNumber; //TODO: add real values for these
+        } else if (numPixels == 2) {
+            target = arm1.getCurrentPosition() + (2 * magicNumber);
+        } else { telemetry.addData("outtake() problem:", numPixels + " is not 1 or 2. try again stupid"); }
+
+        arm1.setTargetPosition(target);
+        arm2.setTargetPosition(target);
+    }
+    private void initDoubleVision() {
         // AprilTag Configuration
         aprilTag = new AprilTagProcessor.Builder().setLensIntrinsics(678.154, 678.17, 318.135, 228.374)
                 .build();
@@ -269,7 +320,7 @@ public class AutoMain extends LinearOpMode {
         tfod = new TfodProcessor.Builder()
                 .build();
         //RTDP Initialization
-        RTDP = new RandomizationTargetDeterminationProcessor(alliance, randomizationItem, telemetry);
+        RTDP = new RandomizationTargetDeterminationProcessor(alliance, telemetry);
         // -----------------------------------------------------------------------------------------
         // Camera Configuration
 
@@ -375,7 +426,7 @@ public class AutoMain extends LinearOpMode {
     }   // end method telemetryTfod()
 
     //this is a No-Argument constructor which updates the consciousness of the self aware super-robot in 3D-space
-    private  void runApril(){
+    private  void updatePosApril(){
         boolean targetFound = false;    // Set to true when an AprilTag target is detected
         chosenTag = null;
 
@@ -400,14 +451,9 @@ public class AutoMain extends LinearOpMode {
                 telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
             }
             if (targetFound) {
-                /*TODO: do math to figure out our position
-                 * use RobotAutoDriveByGyro_Linear as an example to write some path planning code (maybe)
-                 */
-
+                //TODO: check this to make sure it actually works
                 positionX = (chosenTag.rawPose.x + chosenTag.ftcPose.x);
-                positionY = (chosenTag.rawPose.y + chosenTag.ftcPose.y);  //I made this up I have no idea if it works
-
-
+                positionY = (chosenTag.rawPose.y + chosenTag.ftcPose.y);
             }
         }
     }
@@ -508,6 +554,8 @@ public class AutoMain extends LinearOpMode {
 
             // Pivot in place by applying the turning correction
             moveRobot(0, TURN_SPEED);
+            //update our position to account for slippage
+            updatePosApril();
         }
 
         // Stop all motion;
