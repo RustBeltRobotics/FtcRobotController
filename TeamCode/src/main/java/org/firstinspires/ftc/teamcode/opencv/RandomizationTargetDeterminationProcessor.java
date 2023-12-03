@@ -8,7 +8,6 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
 import org.firstinspires.ftc.teamcode.model.Alliance;
-import org.firstinspires.ftc.teamcode.model.RandomizationItem;
 import org.firstinspires.ftc.teamcode.model.TargetPosition;
 import org.firstinspires.ftc.vision.VisionProcessor;
 import org.opencv.core.Core;
@@ -23,19 +22,16 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class RandomizationTargetDeterminationProcessor implements VisionProcessor {
 
     //Note: refer to https://github.com/OpenFTC/EasyOpenCV for examples of OpenCV pipelines
 
-    //these values are based on 640x480 resolution with near vertical camera position - adjust accordingly if resolution or camera angles change
-    private static final int SIDE_REGION_WIDTH = 140;
-    private static final int TOP_REGION_HEIGHT = 140;
-    private static final int SKEW_OFFSET = 20;  //extra buffer to account for left/right skewing of spike marks (eg. appearing as / or \ instead of | )
+    //these values are based on 640x480 resolution with near vertical camera position - adjust accordingly if resolution or camera angles changes
+    private static final int SIDE_REGION_WIDTH = 126;
+    private static final int TOP_REGION_HEIGHT = 146;
 
     //Note: pixel coordinate plane: origin (0,0) is top left corner of image, x increases to the right, y increases down, bottom right corner = (width - 1, height - 1)
 
@@ -58,27 +54,23 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
         static final Scalar RED_UPPER_RANGE_2 = new Scalar(180, 255, 255);
     }
 
-    private static final double MIN_RECTANGLE_AREA_THRESHOLD = 100.00; //test and adjust - min color blob bounding rectangle area we care about in pixels
+    private static final double MIN_RECTANGLE_AREA = 20000.00; //test and adjust - min color blob bounding rectangle area we care about in pixels
     private final Alliance alliance;
-    private final RandomizationItem randomizationItem;
     private final Telemetry telemetry;
     private volatile Recognition pixelRecognition; //TFOD detected randomization Pixel lying on spike mark
     private volatile TargetPosition detectedPosition;
 
-    public RandomizationTargetDeterminationProcessor(Alliance alliance, RandomizationItem randomizationItem, Telemetry telemetry) {
+    public RandomizationTargetDeterminationProcessor(Alliance alliance, Telemetry telemetry) {
         this.alliance = alliance;
-        this.randomizationItem = randomizationItem;
         this.telemetry = telemetry;
     }
 
     @Override
     public void init(int width, int height, CameraCalibration calibration) {
-        telemetry.addData("Vision",  "RTDP initial W = %d, H = %d", width, height);
-        telemetry.update();
         int topRegionWidth = width - (2 * SIDE_REGION_WIDTH);
-        leftRegion = new Rect(new Point(0, TOP_REGION_HEIGHT), new Point(SIDE_REGION_WIDTH + SKEW_OFFSET, height - 1));
-        centerRegion = new Rect(new Point(SIDE_REGION_WIDTH - SKEW_OFFSET, 0), new Point(SIDE_REGION_WIDTH + topRegionWidth + SKEW_OFFSET, TOP_REGION_HEIGHT));
-        rightRegion = new Rect(new Point(width - SIDE_REGION_WIDTH - SKEW_OFFSET, TOP_REGION_HEIGHT), new Point(width - 1, height - 1));
+        leftRegion = new Rect(new Point(0, TOP_REGION_HEIGHT), new Point(SIDE_REGION_WIDTH, height - 1));
+        centerRegion = new Rect(new Point(SIDE_REGION_WIDTH, 0), new Point(SIDE_REGION_WIDTH + topRegionWidth, TOP_REGION_HEIGHT));
+        rightRegion = new Rect(new Point(width - SIDE_REGION_WIDTH, TOP_REGION_HEIGHT), new Point(width - 1, height - 1));
     }
 
     @Override
@@ -106,7 +98,7 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
             double rectangleArea = boundingRect.size.area();
 
             //ignore blobs smaller than our minimum containing rectangle area
-            if (rectangleArea > MIN_RECTANGLE_AREA_THRESHOLD) {
+            if (rectangleArea > MIN_RECTANGLE_AREA) {
                 if (spikeBoundingRectangles.isEmpty()) {
                     spikeBoundingRectangles = new ArrayList<>();
                 }
@@ -120,11 +112,6 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
             //don't leak native allocated memory
             areaPoints.release();
             contour.release();
-        }
-
-        if (!spikeBoundingRectangles.isEmpty()) {
-            telemetry.addData("Vision",  "RTDP found %d bounding rectangles for spike marks", spikeBoundingRectangles.size());
-            telemetry.update();
         }
 
         return spikeBoundingRectangles;
@@ -152,29 +139,10 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
         spikeRectanglePaint.setColor(Color.GREEN);
         spikeRectanglePaint.setStyle(Paint.Style.STROKE);
         spikeRectanglePaint.setStrokeWidth(scaleCanvasDensity * 4);
-        Map<TargetPosition, Integer> candidateSpikeRectCountByPosition = new EnumMap<>(TargetPosition.class);
-
-        if (!androidGraphicsSpikeBoundingRectangles.isEmpty()) {
-            candidateSpikeRectCountByPosition.put(TargetPosition.LEFT, 0);
-            candidateSpikeRectCountByPosition.put(TargetPosition.CENTER, 0);
-            candidateSpikeRectCountByPosition.put(TargetPosition.RIGHT, 0);
-        }
 
         for (android.graphics.Rect androidGraphicsSpikeBoundingRectangle : androidGraphicsSpikeBoundingRectangles) {
             //draw green rectangles around detected spike marks
             canvas.drawRect(androidGraphicsSpikeBoundingRectangle, spikeRectanglePaint);
-            if (detectedPosition == null) {
-                //check which detection region of the screen the bounding rectangle falls within
-                if (leftRegionAndroidRect.contains(androidGraphicsSpikeBoundingRectangle) || leftRegionAndroidRect.intersect(androidGraphicsSpikeBoundingRectangle)) {
-                    candidateSpikeRectCountByPosition.put(TargetPosition.LEFT, candidateSpikeRectCountByPosition.get(TargetPosition.LEFT) + 1);
-                } else if (centerRegionAndroidRect.contains(androidGraphicsSpikeBoundingRectangle) || centerRegionAndroidRect.intersect(androidGraphicsSpikeBoundingRectangle)) {
-                    candidateSpikeRectCountByPosition.put(TargetPosition.CENTER, candidateSpikeRectCountByPosition.get(TargetPosition.CENTER) + 1);
-                } else if (rightRegionAndroidRect.contains(androidGraphicsSpikeBoundingRectangle) || rightRegionAndroidRect.intersect(androidGraphicsSpikeBoundingRectangle)) {
-                    candidateSpikeRectCountByPosition.put(TargetPosition.RIGHT, candidateSpikeRectCountByPosition.get(TargetPosition.RIGHT) + 1);
-                }
-            }
-
-            /*
             //check if the pixel is on a spike mark
             if (pixelRecognition != null && detectedPosition == null) {
                 android.graphics.Rect pixelBoundingRectangle = new android.graphics.Rect(Math.round(pixelRecognition.getLeft() * scaleBmpPxToCanvasPx),
@@ -198,24 +166,6 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
                     // maybe pre-program arm/drive sequence to place pixel on a static pre-determined position on each TargetPosition spike mark?
                 }
             }
-             */
-        }
-
-        if (detectedPosition == null && !androidGraphicsSpikeBoundingRectangles.isEmpty()) {
-            Map.Entry<TargetPosition, Integer> targetEntry;
-
-            if (randomizationItem == RandomizationItem.PIXEL) {
-                //consider the position with the most detected rectangles the target (the white pixel should cause the single rect to break into multiple)
-                targetEntry = Collections.max(candidateSpikeRectCountByPosition.entrySet(), Map.Entry.comparingByValue());
-            } else {
-                //consider the position with the least detected rectangles the target (the colored prop should NOT cause the single rect to break into multiple)
-                //TODO: test this assumption
-                targetEntry = Collections.min(candidateSpikeRectCountByPosition.entrySet(), Map.Entry.comparingByValue());
-            }
-
-            detectedPosition = targetEntry.getKey();
-            telemetry.addData("Vision",  "Target scoring position detected: %s with %d rects", detectedPosition, targetEntry.getValue());
-            telemetry.update();
         }
     }
 
