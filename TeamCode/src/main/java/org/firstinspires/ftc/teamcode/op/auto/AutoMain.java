@@ -20,6 +20,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.teamcode.model.Alliance;
+import org.firstinspires.ftc.teamcode.model.RandomizationItem;
 import org.firstinspires.ftc.teamcode.model.TargetPosition;
 import org.firstinspires.ftc.teamcode.opencv.RandomizationTargetDeterminationProcessor;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -44,6 +45,7 @@ public class AutoMain extends LinearOpMode {
     //basic typical opmode stuff
     private final ElapsedTime runtime = new ElapsedTime();
     private final Alliance alliance = Alliance.BLUE;
+    private final RandomizationItem randomizationItem = RandomizationItem.PIXEL;
 
     //math to make convert motor rotations to wheel distance
     static final double COUNTS_PER_MOTOR_REV = 537.6;    // neverest 20
@@ -136,10 +138,9 @@ public class AutoMain extends LinearOpMode {
 
         visionPortal.setProcessorEnabled(aprilTag, false);
         visionPortal.setProcessorEnabled(tfod, false);
-        visionPortal.setProcessorEnabled(RTDP, false);
+        visionPortal.setProcessorEnabled(RTDP, true);
 
-
-        RTDP.setDetectedPosition(TargetPosition.LEFT);
+//        RTDP.setDetectedPosition(TargetPosition.LEFT);
         while (RTDP.getDetectedPosition() == null){
            telemetry.addData("Status", "looking for target");
            telemetry.update();
@@ -268,7 +269,7 @@ public class AutoMain extends LinearOpMode {
         tfod = new TfodProcessor.Builder()
                 .build();
         //RTDP Initialization
-        RTDP = new RandomizationTargetDeterminationProcessor(alliance, telemetry);
+        RTDP = new RandomizationTargetDeterminationProcessor(alliance, randomizationItem, telemetry);
         // -----------------------------------------------------------------------------------------
         // Camera Configuration
 
