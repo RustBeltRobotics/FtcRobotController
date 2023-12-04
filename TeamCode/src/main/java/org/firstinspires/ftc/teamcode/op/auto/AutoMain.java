@@ -87,6 +87,7 @@ public class AutoMain extends LinearOpMode {
     private double positionX;
     private double positionY;
     private double robotBearing;
+
     @Override
     public void runOpMode() {
         // Initialize the Apriltag Detection process
@@ -156,7 +157,7 @@ public class AutoMain extends LinearOpMode {
         //                               ! START ROUTINE HERE !
         //------------------------------------------------------------------------------------------
 
-        dumbDrive(DRIVE_SPEED,  12,  12, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
+        dumbDrive(DRIVE_SPEED, 12, 12, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
 
         visionPortal.setActiveCamera(webcam2);
 
@@ -165,21 +166,24 @@ public class AutoMain extends LinearOpMode {
         visionPortal.setProcessorEnabled(RTDP, true);
 
         //RTDP.setDetectedPosition(TargetPosition.LEFT);
-        while (RTDP.getDetectedPosition() == null){
-           telemetry.addData("Status", "you can hide but you cant run ( where is the tape :( )");
-           telemetry.update();
+        while (RTDP.getDetectedPosition() == null) {
+            telemetry.addData("Status", "where is the tape :(");
+            telemetry.update();
         }
-
-        //TODO: move intake to the spike using RTDP
-
+        //position the intake over the correct spike mark
+        moveToSpike(RTDP.getDetectedPosition());
+        //place 1 pixel
         outtake(1);
-        updatePosApril(); //update position with big april tags
+        //back up to avoid moving the pixel by accident
+        dumbDrive(1, -1, -1, 1);
+        //update position with big april tags
+        updatePosApril();
 
         visionPortal.setProcessorEnabled(RTDP, false);
         visionPortal.setProcessorEnabled(aprilTag, true);
 
         int targetAprilId = scoringTag(RTDP.getDetectedPosition());
-
+        //route to follow for blue side
         if (alliance == Alliance.BLUE) {
             smartDrive(-24.0, 30.5);
             smartDrive(24, 30.5);
@@ -190,13 +194,12 @@ public class AutoMain extends LinearOpMode {
             moveArm("scoring");
             outtake(1);
 
-        } else { //fun fact the alliance will be red
-            //red code
-            telemetry.addData("Status:","PLEASE I WANT TO BE BLUE TURN IT BACK TURN IT BACK");
+        } else if (alliance == Alliance.RED){ //route to follow on the red side
+            //real red code
+            telemetry.addData("Status:", "PLEASE I WANT TO BE BLUE TURN IT BACK TURN IT BACK");
         }
 
         while (opModeIsActive()) {
-            //TELEMETRY
             telemetry.addData("Heading err:", headingError);
             telemetry.addData("Heading:", getHeading());
             telemetry.addData("X", positionX);
@@ -208,6 +211,7 @@ public class AutoMain extends LinearOpMode {
             sleep(100);  // pause to display final telemetry message.
         }
     }
+
     public void dumbDrive(double speed,
                           double leftInches, double rightInches,
                           double timeoutS) {
@@ -243,12 +247,6 @@ public class AutoMain extends LinearOpMode {
             right1.setPower(Math.abs(speed));
             right2.setPower(Math.abs(speed));
 
-            // keep looping while we are still active, and there is time left, and both motors are running.
-            // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
-            // its target position, the motion will stop.  This is "safer" in the event that the robot will
-            // always end the motion as soon as possible.
-            // However, if you require that BOTH motors have finished their moves before the robot continues
-            // onto the next step, use (isBusy() || isBusy()) in the loop test.
             while (opModeIsActive() &&
                     (runtime.seconds() < timeoutS) &&
                     (left1.isBusy() && right1.isBusy())) {
@@ -263,14 +261,11 @@ public class AutoMain extends LinearOpMode {
                 telemetry.update();
 
             }
-
-            // Stop all motion;
             left1.setPower(0);
             left2.setPower(0);
             right1.setPower(0);
             right2.setPower(0);
 
-            // Turn off RUN_TO_POSITION
             left1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
             left2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
             right1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
@@ -279,8 +274,9 @@ public class AutoMain extends LinearOpMode {
             sleep(250);   // optional pause after each move.
         }
     }
+
     // *NEW* moves the arm into one of two super convenient positions !
-    private void moveArm(String thingToDo){
+    private void moveArm(String thingToDo) {
         int scoringPos = 0;  //TODO: add real values for these
         int intakePos = 0;
 
@@ -288,15 +284,19 @@ public class AutoMain extends LinearOpMode {
         arm1.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         arm2.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
 
-        if (thingToDo == "scoring"){
+        if (thingToDo == "scoring") {
             arm1.setTargetPosition(scoringPos);
             arm2.setTargetPosition(scoringPos);
         } else if (thingToDo == "intake") {
             arm1.setTargetPosition(intakePos);
             arm2.setTargetPosition(intakePos);
-        } else { telemetry.addData("moveArm() err:", "invalid value given"); telemetry.update(); }
+        } else {
+            telemetry.addData("moveArm() err:", "invalid value given");
+            telemetry.update();
+        }
     }
-    private void outtake(int numPixels){
+    //drop pixels with input for 1 or 2 pixels to be dropped
+    private void outtake(int numPixels) {
         int target = 0;
         int magicNumber = 0; //magicNumber is the distance the intake encoder has to move for a pixel to be outtaken
         //figure out how many pixels we want to drop
@@ -304,22 +304,20 @@ public class AutoMain extends LinearOpMode {
             target = arm1.getCurrentPosition() + magicNumber; //TODO: add real values for these
         } else if (numPixels == 2) {
             target = arm1.getCurrentPosition() + (2 * magicNumber);
-        } else { telemetry.addData("outtake() problem:", numPixels + " is not 1 or 2. try again stupid"); }
+        } else {
+            telemetry.addData("outtake() problem:", numPixels + " is not 1 or 2. try again stupid");
+        }
 
         arm1.setTargetPosition(target);
         arm2.setTargetPosition(target);
     }
+
+    //code for initializing 2 webcams in a virtual camera which we can switch between 2 webcams.
+    //also add the vision processors
     private void initDoubleVision() {
         // AprilTag Configuration
         aprilTag = new AprilTagProcessor.Builder().setLensIntrinsics(678.154, 678.17, 318.135, 228.374)
                 .build();
-        // Adjust Image Decimation to trade-off detection-range for detection-rate.
-        // eg: Some typical detection data using a Logitech C920 WebCam
-        // Decimation = 1 ..  Detect 2" Tag from 10 feet away at 10 Frames per second
-        // Decimation = 2 ..  Detect 2" Tag from 6  feet away at 22 Frames per second
-        // Decimation = 3 ..  Detect 2" Tag from 4  feet away at 30 Frames Per Second
-        // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second
-        // Note: Decimation can be changed on-the-fly to adapt during a match.
         aprilTag.setDecimation(2);
 
         // TFOD Configuration
@@ -327,9 +325,8 @@ public class AutoMain extends LinearOpMode {
                 .build();
         //RTDP Initialization
         RTDP = new RandomizationTargetDeterminationProcessor(alliance, randomizationItem, telemetry);
-        // -----------------------------------------------------------------------------------------
-        // Camera Configuration
 
+        // Camera Configuration
         webcam1 = hardwareMap.get(WebcamName.class, "Webcam 1");
         webcam2 = hardwareMap.get(WebcamName.class, "Webcam 2");
         CameraName switchableCamera = ClassFactory.getInstance()
@@ -342,48 +339,14 @@ public class AutoMain extends LinearOpMode {
                 .build();
     }// end initDoubleVision()
 
-    private void setManualExposure(int exposureMS, int gain) {
-        // Wait for the camera to be open, then use the controls
-
-        if (visionPortal == null) {
-            return;
-        }
-
-        // Make sure camera is streaming before we try to set the exposure controls
-        if (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
-            telemetry.addData("Camera", "Waiting");
-            telemetry.update();
-            while (!isStopRequested() && (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING)) {
-                sleep(20);
-            }
-            telemetry.addData("Camera", "Ready");
-            telemetry.update();
-        }
-
-        // Set camera controls unless we are stopping.
-        if (!isStopRequested()) {
-            ExposureControl exposureControl = visionPortal.getCameraControl(ExposureControl.class);
-            if (exposureControl.getMode() != ExposureControl.Mode.Manual) {
-                exposureControl.setMode(ExposureControl.Mode.Manual);
-                sleep(50);
-            }
-            exposureControl.setExposure((long) exposureMS, TimeUnit.MILLISECONDS);
-            sleep(20);
-            GainControl gainControl = visionPortal.getCameraControl(GainControl.class);
-            gainControl.setGain(gain);
-            sleep(20);
-            telemetry.addData("Camera", "Ready");
-            telemetry.update();
-        }
-    }
     public void moveRobot(double x, double yaw) {
         // Calculate left and right wheel powers.
-        double leftPower    = x - yaw;
-        double rightPower   = x + yaw;
+        double leftPower = x - yaw;
+        double rightPower = x + yaw;
 
         // Normalize wheel powers to be less than 1.0
         double max = Math.max(Math.abs(leftPower), Math.abs(rightPower));
-        if (max >160.0) {
+        if (max > 160.0) {
             leftPower /= max;
             rightPower /= max;
         }
@@ -432,7 +395,7 @@ public class AutoMain extends LinearOpMode {
     }   // end method telemetryTfod()
 
     //this is a No-Argument constructor which updates the consciousness of the self aware super-robot in 3D-space
-    private  void updatePosApril(){
+    private void updatePosApril() {
         boolean targetFound = false;    // Set to true when an AprilTag target is detected
         chosenTag = null;
 
@@ -442,7 +405,7 @@ public class AutoMain extends LinearOpMode {
             // Look to see if we have size info on this tag.
             if (detection.metadata != null) {
                 //  Check to see if we want to track towards this tag.
-                                            //tags 7&10 are the big AprilTags for the playing field wall
+                //tags 7&10 are the big AprilTags for the playing field wall
                 if ((DESIRED_TAG_ID < 0) || (detection.id == 7 || detection.id == 10)) {
                     // Yes, we want to use this tag.
                     targetFound = true;
@@ -463,7 +426,8 @@ public class AutoMain extends LinearOpMode {
             }
         }
     }
-    private  void goToTag(int iWantThisOne){
+    //makes the robot drive to an aprilTag.
+    private void goToTag(int iWantThisOne) {
         boolean targetFound = false;    // Set to true when an AprilTag target is detected
         chosenTag = null;
 
@@ -494,17 +458,18 @@ public class AutoMain extends LinearOpMode {
                 double headingError = -chosenTag.ftcPose.bearing;
                 //take 9 inches off of the raw position to adjust for robot length and
                 //TODO: ADJUST THE -9 TO ACCOUNT FOR THE ARM LENGTH
-                smartDrive(chosenTag.rawPose.x-9,chosenTag.rawPose.y);
+                smartDrive(chosenTag.rawPose.x - 9, chosenTag.rawPose.y);
             }
         }
     }
-    public void initPose(String startingPositionY, int startingPositionX){
-        double[] arrayOfPossibilities = {-30.0,-18.0,-6.0,6.0,18.0,30.0};
+    //set correct position at the beginning of the match
+    public void initPose(String startingPositionY, int startingPositionX) {
+        double[] arrayOfPossibilities = {-30.0, -18.0, -6.0, 6.0, 18.0, 30.0};
         double A = 28.0;
         double F = -28.0;
         double YstartPos = 0;
 
-        switch (startingPositionY.substring(0,1)){
+        switch (startingPositionY.substring(0, 1)) {
             case "A":
                 YstartPos = 28.0;
                 break;
@@ -517,7 +482,7 @@ public class AutoMain extends LinearOpMode {
         positionX = arrayOfPossibilities[startingPositionX - 1];
 
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
-        RevHubOrientationOnRobot.UsbFacingDirection  usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.UP;
+        RevHubOrientationOnRobot.UsbFacingDirection usbDirection = RevHubOrientationOnRobot.UsbFacingDirection.UP;
         RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
 
         // Now initialize the IMU with this mounting orientation
@@ -526,10 +491,6 @@ public class AutoMain extends LinearOpMode {
         imu.initialize(new IMU.Parameters(orientationOnRobot));
 
         imu.resetYaw();
-
-
-
-        //TODO: ADD ROBOT CENTER OFFSET FROM CONTROLLER IMU
     }
     public double getSteeringCorrection(double desiredHeading, double proportionalGain) {
         targetHeading = desiredHeading;  // Save for telemetry
@@ -538,7 +499,7 @@ public class AutoMain extends LinearOpMode {
         headingError = (targetHeading - getHeading());
 
         // Normalize the error to be within +/- 180 degrees
-        while (headingError > 180)  headingError -= 360;
+        while (headingError > 180) headingError -= 360;
         while (headingError <= -180) headingError += 360;
 
         // Multiply the error by the gain to determine the required steering correction/  Limit the result to +/- 1.0
@@ -563,10 +524,11 @@ public class AutoMain extends LinearOpMode {
             //update our position to account for slippage
             updatePosApril();
         }
-
         // Stop all motion;
         moveRobot(0, 0);
     }
+
+    //return the current rotational angle of the robot in the XY plane
     public double getHeading() {
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
         if (alliance == Alliance.BLUE) {
@@ -575,6 +537,8 @@ public class AutoMain extends LinearOpMode {
             return -(orientation.getYaw(AngleUnit.DEGREES) + 90);
         }
     }
+
+    //drive to a point on the field using X and Y coordinates in (units inches)
     private void smartDrive(double X, double Y) {
         double triX = positionX - X;
         double triY = positionY - Y;
@@ -582,11 +546,13 @@ public class AutoMain extends LinearOpMode {
         double headingIWant = Math.atan2(triY, triX);
         turnToHeading(1, headingIWant);
 
-        double range = Math.sqrt((Math.pow(triX,2) + (Math.pow(triY, 2))));
-        dumbDrive(1,range,range,30);
+        double range = Math.sqrt((Math.pow(triX, 2) + (Math.pow(triY, 2))));
+        dumbDrive(1, range, range, 30);
     }
+
+    //return the id of the aprilTag which corresponds to the spike mark the randomized pixel was on.
     private int scoringTag(TargetPosition targetPos) {
-         switch (targetPos){
+        switch (targetPos) {
             case LEFT:
                 return alliance == Alliance.BLUE ? 1 : 4;
             case CENTER:
@@ -594,6 +560,41 @@ public class AutoMain extends LinearOpMode {
             case RIGHT:
                 return alliance == Alliance.BLUE ? 3 : 6;
         }
-     return -1;
+        return -1;
+    }
+    private void moveToSpike(TargetPosition detectedPosition) {
+        /*
+         *  because the starting position of the robot reletive to the spike marks should be the same
+         *  weather we are on the top or bottom of the field, we do not account for starting position.
+         *  We do have to account for the heading being different depending on the alliance.
+         */
+
+        if (alliance == Alliance.BLUE) {
+            switch (detectedPosition) {
+                //TODO: "fill these in later"
+                case LEFT:
+                    turnToHeading(1, 0);
+                    dumbDrive(0.5, .2, .2, 5);
+                case CENTER:
+                    turnToHeading(1, 0);
+                    dumbDrive(0.5, .2, .2, 5);
+                case RIGHT:
+                    turnToHeading(1, 0);
+                    dumbDrive(0.5, .2, .2, 5);
+            }
+        } else if (alliance == Alliance.RED) {
+            switch (detectedPosition) {
+                //TODO: "fill these in later"
+                case LEFT:
+                    turnToHeading(1, 0);
+                    dumbDrive(0.5, .2, .2, 5);
+                case CENTER:
+                    turnToHeading(1, 0);
+                    dumbDrive(0.5, .2, .2, 5);
+                case RIGHT:
+                    turnToHeading(1, 0);
+                    dumbDrive(0.5, .2, .2, 5);
+            }
+        }
     }
 }
