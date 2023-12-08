@@ -6,7 +6,6 @@ import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -14,8 +13,6 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
@@ -29,7 +26,6 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.tfod.TfodProcessor;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Autonomous(name="Auto-comp", group="Robot")
 //@Disabled
@@ -45,7 +41,7 @@ public class AutoMain extends LinearOpMode {
     static final double DRIVE_SPEED = 5;
     static double TURN_SPEED = 0.5;
     final double SPEED_GAIN =   0.02 ;   //  Speed Control "Gain". eg: Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
-    final double TURN_GAIN  =   0.0005 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+    final double TURN_GAIN  =   0.005 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
     private double  targetHeading = 0;
     private double headingError = 0.0;
     static double HEADING_THRESHOLD = 5.0 ; // How close must the heading get to the target before moving to next step.
@@ -149,7 +145,13 @@ public class AutoMain extends LinearOpMode {
 
         initPose(startingPositionLetter, startingPositionNumber);
 
+        visionPortal.setActiveCamera(webcam2);
+
+
         // Wait for the game to start (driver presses PLAY)
+
+        telemetry.addData("alliance", alliance);
+        telemetry.update();
 
         waitForStart();
 
@@ -157,27 +159,29 @@ public class AutoMain extends LinearOpMode {
         //                               ! START ROUTINE HERE !
         //------------------------------------------------------------------------------------------
 
-        dumbDrive(DRIVE_SPEED, 12, 12, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
+        //intake1.setPower(-1);
+
+        dumbDrive(DRIVE_SPEED, 12, 12, 5.0);  // S1: Forward 12 Inches with 5 Sec timeout
 
         visionPortal.setActiveCamera(webcam2);
 
         visionPortal.setProcessorEnabled(aprilTag, false);
         visionPortal.setProcessorEnabled(tfod, false);
-        visionPortal.setProcessorEnabled(RTDP, true);
+        visionPortal.setProcessorEnabled(RTDP, false);
 
-        //RTDP.setDetectedPosition(TargetPosition.LEFT);
+        RTDP.setDetectedPosition(TargetPosition.LEFT);
         while (RTDP.getDetectedPosition() == null) {
             telemetry.addData("Status", "where is the tape :(");
             telemetry.update();
         }
         //position the intake over the correct spike mark
-        moveToSpike(RTDP.getDetectedPosition());
+        //moveToSpike(RTDP.getDetectedPosition());
         //place 1 pixel
-        outtake(1);
+        //outtake(1);
         //back up to avoid moving the pixel by accident
         dumbDrive(1, -1, -1, 1);
         //update position with big april tags
-        updatePosApril();
+        //updatePosApril();
 
         visionPortal.setProcessorEnabled(RTDP, false);
         visionPortal.setProcessorEnabled(aprilTag, true);
@@ -208,6 +212,8 @@ public class AutoMain extends LinearOpMode {
             telemetry.addData("R1 encoder",right1.getCurrentPosition());
             telemetry.addData("arm1 encoder",arm1.getCurrentPosition());
             telemetry.addData("intake encoder",intake1.getCurrentPosition());
+            telemetry.addData("alliance", alliance);
+            telemetry.update();
             sleep(100);  // pause to display final telemetry message.
         }
     }
@@ -327,16 +333,17 @@ public class AutoMain extends LinearOpMode {
         RTDP = new RandomizationTargetDeterminationProcessor(alliance, randomizationItem, telemetry);
 
         // Camera Configuration
-        webcam1 = hardwareMap.get(WebcamName.class, "Webcam 1");
+        //webcam1 = hardwareMap.get(WebcamName.class, "Webcam 1");
         webcam2 = hardwareMap.get(WebcamName.class, "Webcam 2");
         CameraName switchableCamera = ClassFactory.getInstance()
-                .getCameraManager().nameForSwitchableCamera(webcam1, webcam2);
+                .getCameraManager().nameForSwitchableCamera(webcam2);
 
         // Create the vision portal by using a builder.
         visionPortal = new VisionPortal.Builder()
                 .setCamera(switchableCamera)
                 .addProcessors(tfod, aprilTag, RTDP)
                 .build();
+
     }// end initDoubleVision()
 
     public void moveRobot(double x, double yaw) {
@@ -458,7 +465,7 @@ public class AutoMain extends LinearOpMode {
                 double headingError = -chosenTag.ftcPose.bearing;
                 //take 9 inches off of the raw position to adjust for robot length and
                 //TODO: ADJUST THE -9 TO ACCOUNT FOR THE ARM LENGTH
-                smartDrive(chosenTag.rawPose.x - 9, chosenTag.rawPose.y);
+                smartDrive(chosenTag.rawPose.x - 12, chosenTag.rawPose.y);
             }
         }
     }
@@ -496,7 +503,7 @@ public class AutoMain extends LinearOpMode {
         targetHeading = desiredHeading;  // Save for telemetry
 
         // Determine the heading current error
-        headingError = (targetHeading - getHeading());
+        headingError = -(targetHeading - getHeading());
 
         // Normalize the error to be within +/- 180 degrees
         while (headingError > 180) headingError -= 360;

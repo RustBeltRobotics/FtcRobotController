@@ -43,7 +43,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 @TeleOp(name="dataOp", group="Iterative OpMode")
-@Disabled
+//@Disabled
 public class dataOp extends OpMode
 {
     // Declare OpMode members.
