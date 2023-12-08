@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -15,15 +16,16 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 /**
  * Subsystem for Drivetrain
  */
+@Config
 public class RobotDrive {
 
+    public static Double TURN_AUTHORITY = 1.0; //percentage of the turn stick input that goes through
     private final HardwareMap hardwareMap;
     private final ElapsedTime runtime;
     private final Telemetry telemetry;
     private final Gamepad gamepad1;
     private DcMotorEx left1 = null;
     private DcMotorEx left2 = null;
-    //define right motors 1 and 2
     private DcMotorEx right1 = null;
     private DcMotorEx right2 = null;
 
@@ -72,7 +74,7 @@ public class RobotDrive {
         if (autoBrake == false){
             if (driveType == DriveType.ARCADE) {
                 double drive = gamepad1.left_stick_y;
-                double turn = -gamepad1.right_stick_x;
+                double turn = -gamepad1.right_stick_x * TURN_AUTHORITY;
                 velL = Range.clip(drive + turn, -1.0, 1.0);
                 velR = Range.clip(drive - turn, -1.0, 1.0);
             } else if (driveType == DriveType.TANK) {

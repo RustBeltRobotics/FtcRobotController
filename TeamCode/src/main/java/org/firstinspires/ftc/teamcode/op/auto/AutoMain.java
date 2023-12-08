@@ -3,6 +3,9 @@ package org.firstinspires.ftc.teamcode.op.auto;
 import android.annotation.SuppressLint;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -10,6 +13,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
@@ -28,7 +32,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.tfod.TfodProcessor;
 
 import java.util.List;
-
+@Config
 @Autonomous(name="Auto-comp", group="Robot")
 //@Disabled
 public class AutoMain extends LinearOpMode {
@@ -37,16 +41,15 @@ public class AutoMain extends LinearOpMode {
     //----------------------------------------------------------------------------------------------
 
     //starting positions as defined in the back of game-manual-part-2-traditional
-    private String startingPositionLetter = "A";
-    private int startingPositionNumber = 2;
+    public static String startingPositionLetter = "A";
+    public static int startingPositionNumber = 2;
+
     //tuning variables for movement
-    static final double DRIVE_SPEED = 5;
-    static double TURN_SPEED = 0.5;
-    final double SPEED_GAIN =   0.02 ;   //  Speed Control "Gain". eg: Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
-    final double TURN_GAIN  =   0.005 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
-    private double  targetHeading = 0;
-    private double headingError = 0.0;
-    static double HEADING_THRESHOLD = 5.0 ; // How close must the heading get to the target before moving to next step.
+    public static double DRIVE_SPEED = 5;
+    public static double TURN_SPEED = 0.5;
+    public static double SPEED_GAIN =   0.02 ;   //  Speed Control "Gain". eg: Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
+    public static double TURN_GAIN = 0.005 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+    public static double HEADING_THRESHOLD = 5.0 ; // How close must the heading get to the target before moving to next step.
     //----------------------------------------------------------------------------------------------
 
     /* Declare OpMode members. */
@@ -83,11 +86,14 @@ public class AutoMain extends LinearOpMode {
     private AprilTagProcessor aprilTag;
     private TfodProcessor tfod;
     private VisionPortal visionPortal;
+    private FtcDashboard dashboard = FtcDashboard.getInstance();
 
     // irobot
     private double positionX;
     private double positionY;
     private double robotBearing;
+    private double  targetHeading = 0;
+    private double headingError = 0.0;
 
     @Override
     public void runOpMode() {
@@ -137,7 +143,8 @@ public class AutoMain extends LinearOpMode {
         arm1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         arm2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
-        //setManualExposure(6, 250);  // Use low exposure time to reduce motion blur
+        //setup FTC dashboard telemetry
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         // Send telemetry message to indicate successful Encoder reset
         telemetry.addData("Starting at", "%7d :%7d",
@@ -151,6 +158,7 @@ public class AutoMain extends LinearOpMode {
         initPose(startingPositionLetter, startingPositionNumber);
 
         visionPortal.setActiveCamera(webcam2);
+
         visionPortal.setProcessorEnabled(cameraStreamProcessor, true);
         //start streaming webcam frames to FTC dashboard
         FtcDashboard.getInstance().startCameraStream(cameraStreamProcessor, 0);
@@ -160,13 +168,16 @@ public class AutoMain extends LinearOpMode {
         telemetry.addData("alliance", alliance);
         telemetry.update();
 
+        //test robotlog
+        RobotLog.dd("status", "hi computer");
+
+        // Wait for the game to start (driver presses PLAY)
         waitForStart();
+
 
         //------------------------------------------------------------------------------------------
         //                               ! START ROUTINE HERE !
         //------------------------------------------------------------------------------------------
-
-        //intake1.setPower(-1);
 
         dumbDrive(DRIVE_SPEED, 12, 12, 5.0);  // S1: Forward 12 Inches with 5 Sec timeout
 
@@ -208,20 +219,6 @@ public class AutoMain extends LinearOpMode {
         } else if (alliance == Alliance.RED){ //route to follow on the red side
             //real red code
             telemetry.addData("Status:", "PLEASE I WANT TO BE BLUE TURN IT BACK TURN IT BACK");
-        }
-
-        while (opModeIsActive()) {
-            telemetry.addData("Heading err:", headingError);
-            telemetry.addData("Heading:", getHeading());
-            telemetry.addData("X", positionX);
-            telemetry.addData("Y", positionY);
-            telemetry.addData("L1 encoder",left1.getCurrentPosition());
-            telemetry.addData("R1 encoder",right1.getCurrentPosition());
-            telemetry.addData("arm1 encoder",arm1.getCurrentPosition());
-            telemetry.addData("intake encoder",intake1.getCurrentPosition());
-            telemetry.addData("alliance", alliance);
-            telemetry.update();
-            sleep(100);  // pause to display final telemetry message.
         }
     }
 
@@ -267,9 +264,9 @@ public class AutoMain extends LinearOpMode {
                 // Display it for the driver.
                 telemetry.setMsTransmissionInterval(20);
                 telemetry.addData("Running to", " %7d :%7d", newLeft1Target, newRight1Target);
-                telemetry.addData("Currently at", " at %7d :%7d",
-                        left1.getCurrentPosition(), right1.getCurrentPosition());
-
+                telemetry.addData("Currently at", " at %7d :%7d", left1.getCurrentPosition(), right1.getCurrentPosition());
+                telemetry.addData("X", positionX);
+                telemetry.addData("Y", positionY);
                 telemetry.addData("Heading err", headingError);
                 telemetry.addData("Heading", getHeading());
                 sleep(20);
@@ -474,6 +471,8 @@ public class AutoMain extends LinearOpMode {
                 // Determine heading and range error so we can use them to control the robot automatically.
                 double rangeError = (chosenTag.ftcPose.range - 12); //second number is desired distance from tag
                 double headingError = -chosenTag.ftcPose.bearing;
+                telemetry.addData("Heading err:", headingError);
+                telemetry.addData("Heading:", getHeading());
                 //take 9 inches off of the raw position to adjust for robot length and
                 //TODO: ADJUST THE -9 TO ACCOUNT FOR THE ARM LENGTH
                 smartDrive(chosenTag.rawPose.x - 12, chosenTag.rawPose.y);
@@ -515,6 +514,8 @@ public class AutoMain extends LinearOpMode {
 
         // Determine the heading current error
         headingError = -(targetHeading - getHeading());
+        telemetry.addData("Heading err:", headingError);
+        telemetry.addData("Heading:", getHeading());
 
         // Normalize the error to be within +/- 180 degrees
         while (headingError > 180) headingError -= 360;

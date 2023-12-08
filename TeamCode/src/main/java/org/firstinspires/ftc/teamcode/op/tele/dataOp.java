@@ -29,6 +29,8 @@
 
 package org.firstinspires.ftc.teamcode.op.tele;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -112,6 +114,9 @@ public class dataOp extends OpMode
 
         intake1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
 
+        //setup FTC dashboard telemetry
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
@@ -130,10 +135,10 @@ public class dataOp extends OpMode
         telemetry.update();
 
         if ( gamepad1.a == true ) {
-            left1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-            left2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-            right1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-            right2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            left1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+            left2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+            right1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+            right2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             arm1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             arm2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             intake1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
