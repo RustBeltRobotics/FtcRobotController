@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opencv;
+package org.firstinspires.ftc.teamcode.vision;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -73,7 +73,7 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
 
     @Override
     public void init(int width, int height, CameraCalibration calibration) {
-        telemetry.addData("Vision",  "RTDP initial W = %d, H = %d", width, height);
+        telemetry.addData("Vision",  "RTDP initial W = %d, H = %d, seeking %s spike marks", width, height, alliance);
         telemetry.update();
         int topRegionWidth = width - (2 * SIDE_REGION_WIDTH);
         leftRegion = new Rect(new Point(0, TOP_REGION_HEIGHT), new Point(SIDE_REGION_WIDTH + SKEW_OFFSET, height - 1));

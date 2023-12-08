@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.op.auto;
 
 import android.annotation.SuppressLint;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -19,7 +20,8 @@ import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.teamcode.model.Alliance;
 import org.firstinspires.ftc.teamcode.model.RandomizationItem;
 import org.firstinspires.ftc.teamcode.model.TargetPosition;
-import org.firstinspires.ftc.teamcode.opencv.RandomizationTargetDeterminationProcessor;
+import org.firstinspires.ftc.teamcode.vision.CameraStreamProcessor;
+import org.firstinspires.ftc.teamcode.vision.RandomizationTargetDeterminationProcessor;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -75,6 +77,9 @@ public class AutoMain extends LinearOpMode {
     private static final int DESIRED_TAG_ID = -1;
     public AprilTagDetection chosenTag = null;
     public WebcamName webcam1, webcam2;
+
+    //For sending OpenCV image frames to FTC Dashboard
+    private CameraStreamProcessor cameraStreamProcessor;
     private AprilTagProcessor aprilTag;
     private TfodProcessor tfod;
     private VisionPortal visionPortal;
@@ -86,7 +91,7 @@ public class AutoMain extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        // Initialize the Apriltag Detection process
+        // Initialize the vision processors for webcams
         initDoubleVision();
 
         // Initialize the drive system variables.
@@ -146,7 +151,9 @@ public class AutoMain extends LinearOpMode {
         initPose(startingPositionLetter, startingPositionNumber);
 
         visionPortal.setActiveCamera(webcam2);
-
+        visionPortal.setProcessorEnabled(cameraStreamProcessor, true);
+        //start streaming webcam frames to FTC dashboard
+        FtcDashboard.getInstance().startCameraStream(cameraStreamProcessor, 0);
 
         // Wait for the game to start (driver presses PLAY)
 
@@ -258,15 +265,18 @@ public class AutoMain extends LinearOpMode {
                     (left1.isBusy() && right1.isBusy())) {
 
                 // Display it for the driver.
+                telemetry.setMsTransmissionInterval(20);
                 telemetry.addData("Running to", " %7d :%7d", newLeft1Target, newRight1Target);
                 telemetry.addData("Currently at", " at %7d :%7d",
                         left1.getCurrentPosition(), right1.getCurrentPosition());
 
                 telemetry.addData("Heading err", headingError);
                 telemetry.addData("Heading", getHeading());
+                sleep(20);
                 telemetry.update();
-
             }
+
+            telemetry.setMsTransmissionInterval(250);  //restore original default telemetry transmission interval
             left1.setPower(0);
             left2.setPower(0);
             right1.setPower(0);
@@ -321,6 +331,7 @@ public class AutoMain extends LinearOpMode {
     //code for initializing 2 webcams in a virtual camera which we can switch between 2 webcams.
     //also add the vision processors
     private void initDoubleVision() {
+        cameraStreamProcessor = new CameraStreamProcessor();
         // AprilTag Configuration
         aprilTag = new AprilTagProcessor.Builder().setLensIntrinsics(678.154, 678.17, 318.135, 228.374)
                 .build();
@@ -341,7 +352,7 @@ public class AutoMain extends LinearOpMode {
         // Create the vision portal by using a builder.
         visionPortal = new VisionPortal.Builder()
                 .setCamera(switchableCamera)
-                .addProcessors(tfod, aprilTag, RTDP)
+                .addProcessors(tfod, aprilTag, RTDP, cameraStreamProcessor)
                 .build();
 
     }// end initDoubleVision()
