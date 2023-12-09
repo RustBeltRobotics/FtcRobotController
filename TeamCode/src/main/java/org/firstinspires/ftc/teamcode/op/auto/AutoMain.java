@@ -94,6 +94,7 @@ public class AutoMain extends LinearOpMode {
     private double robotBearing;
     private double  targetHeading = 0;
     private double headingError = 0.0;
+    private int hope = 2;
 
     @Override
     public void runOpMode() {
@@ -233,12 +234,12 @@ public class AutoMain extends LinearOpMode {
 
         // Ensure that the OpMode is still active
         if (opModeIsActive()) {
-
             // Determine new target position, and pass to motor controller
             newLeft1Target = left1.getCurrentPosition() + (int) (leftInches * COUNTS_PER_INCH);
             newLeft2Target = left2.getCurrentPosition() + (int) (leftInches * COUNTS_PER_INCH);
             newRight1Target = right1.getCurrentPosition() + (int) (rightInches * COUNTS_PER_INCH);
             newRight2Target = right2.getCurrentPosition() + (int) (rightInches * COUNTS_PER_INCH);
+
             left1.setTargetPosition(newLeft1Target);
             left2.setTargetPosition(newLeft2Target);
             right1.setTargetPosition(newRight1Target);
@@ -260,7 +261,7 @@ public class AutoMain extends LinearOpMode {
             while (opModeIsActive() &&
                     (runtime.seconds() < timeoutS) &&
                     (left1.isBusy() && right1.isBusy())) {
-
+                updatePosApril();
                 // Display it for the driver.
                 telemetry.setMsTransmissionInterval(20);
                 telemetry.addData("Running to", " %7d :%7d", newLeft1Target, newRight1Target);
@@ -559,6 +560,7 @@ public class AutoMain extends LinearOpMode {
 
     //drive to a point on the field using X and Y coordinates in (units inches)
     private void smartDrive(double X, double Y) {
+        updatePosApril();
         double triX = positionX - X;
         double triY = positionY - Y;
 
@@ -567,8 +569,27 @@ public class AutoMain extends LinearOpMode {
 
         double range = Math.sqrt((Math.pow(triX, 2) + (Math.pow(triY, 2))));
         dumbDrive(1, range, range, 30);
+        //account for getting in an accident
+        updatePosApril();
+        if (hope == 0){
+            getDesperate(X,Y);
+        } else if ((Math.abs(positionX - X) > .5) || (Math.abs(positionY - Y) > .5)) {
+            smartDrive(X,Y);
+            hope--;
+        }
     }
-
+    private void getDesperate(double X, double Y) {
+        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+        while((currentDetections.size() == 0)) {
+            left1.setPower(.5);
+            left2.setPower(-.5);
+            currentDetections = aprilTag.getDetections();
+        }
+        left1.setPower(0);
+        left2.setPower(0);
+        hope = 3;
+        smartDrive(X,Y);
+    }
     //return the id of the aprilTag which corresponds to the spike mark the randomized pixel was on.
     private int scoringTag(TargetPosition targetPos) {
         switch (targetPos) {
