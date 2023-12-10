@@ -4,6 +4,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.util.RobotLog;
+
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
@@ -27,14 +30,14 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+@Config
 public class RandomizationTargetDeterminationProcessor implements VisionProcessor {
 
     //Note: refer to https://github.com/OpenFTC/EasyOpenCV for examples of OpenCV pipelines
 
     //these values are based on 640x480 resolution with near vertical camera position - adjust accordingly if resolution or camera angles change
     private static final int SIDE_REGION_WIDTH = 140;
-    private static final int TOP_REGION_HEIGHT = 140;
+    private static final int TOP_REGION_HEIGHT = 180;
     private static final int SKEW_OFFSET = 20;  //extra buffer to account for left/right skewing of spike marks (eg. appearing as / or \ instead of | )
 
     //Note: pixel coordinate plane: origin (0,0) is top left corner of image, x increases to the right, y increases down, bottom right corner = (width - 1, height - 1)
@@ -52,13 +55,15 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
     static class ColorRange {
         static final Scalar BLUE_LOWER_RANGE = new Scalar(100, 150, 0);
         static final Scalar BLUE_UPPER_RANGE = new Scalar(140, 255, 255);
-        static final Scalar RED_LOWER_RANGE_1 = new Scalar(0, 70, 50);
+        //static final Scalar RED_LOWER_RANGE_1 = new Scalar(0, 70, 50);
+        static final Scalar RED_LOWER_RANGE_1 = new Scalar(0, 40, 50);
         static final Scalar RED_UPPER_RANGE_1 = new Scalar(10, 255, 255);
-        static final Scalar RED_LOWER_RANGE_2 = new Scalar(170, 70, 50);
+        //static final Scalar RED_LOWER_RANGE_2 = new Scalar(170, 70, 50);
+        static final Scalar RED_LOWER_RANGE_2 = new Scalar(170, 40, 50);
         static final Scalar RED_UPPER_RANGE_2 = new Scalar(180, 255, 255);
     }
 
-    private static final double MIN_RECTANGLE_AREA_THRESHOLD = 100.00; //test and adjust - min color blob bounding rectangle area we care about in pixels
+    public static double MIN_RECTANGLE_AREA_THRESHOLD = 150.00; //test and adjust - min color blob bounding rectangle area we care about in pixels
     private final Alliance alliance;
     private final RandomizationItem randomizationItem;
     private final Telemetry telemetry;
@@ -75,30 +80,39 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
     public void init(int width, int height, CameraCalibration calibration) {
         telemetry.addData("Vision",  "RTDP initial W = %d, H = %d, seeking %s spike marks", width, height, alliance);
         telemetry.update();
+        RobotLog.dd("Vision","RTDP inital W %d, H = %d spike marks", width, height, alliance);
+        RobotLog.dd("detectedPosition", String.valueOf(detectedPosition));
         int topRegionWidth = width - (2 * SIDE_REGION_WIDTH);
-        leftRegion = new Rect(new Point(0, TOP_REGION_HEIGHT), new Point(SIDE_REGION_WIDTH + SKEW_OFFSET, height - 1));
-        centerRegion = new Rect(new Point(SIDE_REGION_WIDTH - SKEW_OFFSET, 0), new Point(SIDE_REGION_WIDTH + topRegionWidth + SKEW_OFFSET, TOP_REGION_HEIGHT));
-        rightRegion = new Rect(new Point(width - SIDE_REGION_WIDTH - SKEW_OFFSET, TOP_REGION_HEIGHT), new Point(width - 1, height - 1));
+        //leftRegion = new Rect(new Point(0, TOP_REGION_HEIGHT), new Point(SIDE_REGION_WIDTH + SKEW_OFFSET, height - 1));
+        //centerRegion = new Rect(new Point(SIDE_REGION_WIDTH - SKEW_OFFSET, 0), new Point(SIDE_REGION_WIDTH + topRegionWidth + SKEW_OFFSET, TOP_REGION_HEIGHT));
+        //rightRegion = new Rect(new Point(width - SIDE_REGION_WIDTH - SKEW_OFFSET, TOP_REGION_HEIGHT), new Point(width - 1, height - 1));
+
+        leftRegion = new Rect(new Point(0, 0), new Point(SIDE_REGION_WIDTH, height - 1));
+        centerRegion = new Rect(new Point(SIDE_REGION_WIDTH, 0), new Point(SIDE_REGION_WIDTH + topRegionWidth, TOP_REGION_HEIGHT));
+        rightRegion = new Rect(new Point(width - SIDE_REGION_WIDTH, 0), new Point(width - 1, height - 1));
     }
 
     @Override
     public Object processFrame(Mat frame, long captureTimeNanos) {
         List<Rect> spikeBoundingRectangles = Collections.emptyList();
+        colorContoursMat = new Mat();
 
         Imgproc.cvtColor(frame, hsvMat, Imgproc.COLOR_BGR2HSV);  //convert to HSV color space for better color detection
-        if (alliance == Alliance.BLUE) {
+        if (alliance != Alliance.BLUE) { //TODO: FIND A REAL SOLUTION TO THE COLOR PROBLEM
             Core.inRange(hsvMat, ColorRange.BLUE_LOWER_RANGE, ColorRange.BLUE_UPPER_RANGE, colorContoursMat); //select only blue pixels
+            RobotLog.dd("processFrame","blue");
         } else {
             //red color range wraps around, so we need to merge two masks
             Core.inRange(hsvMat, ColorRange.RED_LOWER_RANGE_1, ColorRange.RED_UPPER_RANGE_1, redMask1); //red pixels 1
             Core.inRange(hsvMat, ColorRange.RED_LOWER_RANGE_2, ColorRange.RED_UPPER_RANGE_2, redMask2); //red pixels 2
             Core.bitwise_or(redMask1, redMask2, colorContoursMat); //combine masks to select all red pixels covering both color ranges
+            RobotLog.dd("processFrame","red");
         }
 
         //find color contours / blobs
         List<MatOfPoint> contours = new ArrayList<>();
         Imgproc.findContours(colorContoursMat, contours, colorContoursHierarchyMat, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-
+        colorContoursMat.release();
         for (MatOfPoint contour : contours) {
             MatOfPoint2f areaPoints = new MatOfPoint2f(contour.toArray());
             RotatedRect boundingRect = Imgproc.minAreaRect(areaPoints);
@@ -204,18 +218,22 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
         if (detectedPosition == null && !androidGraphicsSpikeBoundingRectangles.isEmpty()) {
             Map.Entry<TargetPosition, Integer> targetEntry;
 
-            if (randomizationItem == RandomizationItem.PIXEL) {
-                //consider the position with the most detected rectangles the target (the white pixel should cause the single rect to break into multiple)
-                targetEntry = Collections.max(candidateSpikeRectCountByPosition.entrySet(), Map.Entry.comparingByValue());
-            } else {
-                //consider the position with the least detected rectangles the target (the colored prop should NOT cause the single rect to break into multiple)
-                //TODO: test this assumption
-                targetEntry = Collections.min(candidateSpikeRectCountByPosition.entrySet(), Map.Entry.comparingByValue());
-            }
+            boolean allSpikesDetected = candidateSpikeRectCountByPosition.entrySet().stream().allMatch(entry -> entry.getValue()>0);
+            if (allSpikesDetected) {
+                if (randomizationItem == RandomizationItem.PIXEL) {
+                    //consider the position with the most detected rectangles the target (the white pixel should cause the single rect to break into multiple)
+                    targetEntry = Collections.max(candidateSpikeRectCountByPosition.entrySet(), Map.Entry.comparingByValue());
+                } else {
+                    //consider the position with the least detected rectangles the target (the colored prop should NOT cause the single rect to break into multiple)
+                    //TODO: test this assumption
+                    targetEntry = Collections.min(candidateSpikeRectCountByPosition.entrySet(), Map.Entry.comparingByValue());
+                }
 
-            detectedPosition = targetEntry.getKey();
-            telemetry.addData("Vision",  "Target scoring position detected: %s with %d rects", detectedPosition, targetEntry.getValue());
-            telemetry.update();
+                detectedPosition = targetEntry.getKey();
+                telemetry.addData("Vision", "Target scoring position detected: %s with %d rects", detectedPosition, targetEntry.getValue());
+                telemetry.update();
+                RobotLog.dd("Vision", "Target scoring position detected %s with %d rects", detectedPosition, targetEntry.getValue());
+            }
         }
     }
 
