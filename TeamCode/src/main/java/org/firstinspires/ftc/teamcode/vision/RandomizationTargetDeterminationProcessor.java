@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.vision;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -8,12 +9,16 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.function.Consumer;
+import org.firstinspires.ftc.robotcore.external.function.Continuation;
+import org.firstinspires.ftc.robotcore.external.stream.CameraStreamSource;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
 import org.firstinspires.ftc.teamcode.model.Alliance;
 import org.firstinspires.ftc.teamcode.model.RandomizationItem;
 import org.firstinspires.ftc.teamcode.model.TargetPosition;
 import org.firstinspires.ftc.vision.VisionProcessor;
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -29,9 +34,10 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 @Config
-public class RandomizationTargetDeterminationProcessor implements VisionProcessor {
+public class RandomizationTargetDeterminationProcessor implements VisionProcessor, CameraStreamSource {
 
     //Note: refer to https://github.com/OpenFTC/EasyOpenCV for examples of OpenCV pipelines
 
@@ -41,6 +47,9 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
     private static final int SKEW_OFFSET = 20;  //extra buffer to account for left/right skewing of spike marks (eg. appearing as / or \ instead of | )
 
     //Note: pixel coordinate plane: origin (0,0) is top left corner of image, x increases to the right, y increases down, bottom right corner = (width - 1, height - 1)
+
+    //For sending OpenCV image Matrix frames to FTC Dashboard as Bitmaps
+    private final AtomicReference<Bitmap> lastFrame = new AtomicReference<>(Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565));
 
     //rectangular regions on the screen/frame we will look in for spike marks to determine target position
     private Rect leftRegion;
@@ -63,10 +72,11 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
         static final Scalar RED_UPPER_RANGE_2 = new Scalar(180, 255, 255);
     }
 
-    public static double MIN_RECTANGLE_AREA_THRESHOLD = 150.00; //test and adjust - min color blob bounding rectangle area we care about in pixels
+    public static double MIN_RECTANGLE_AREA_THRESHOLD = 100.00; //test and adjust - min color blob bounding rectangle area we care about in pixels
     private final Alliance alliance;
     private final RandomizationItem randomizationItem;
     private final Telemetry telemetry;
+    private boolean stopLookingWhenTargetFound = true;
     private volatile Recognition pixelRecognition; //TFOD detected randomization Pixel lying on spike mark
     private volatile TargetPosition detectedPosition;
 
@@ -80,8 +90,8 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
     public void init(int width, int height, CameraCalibration calibration) {
         telemetry.addData("Vision",  "RTDP initial W = %d, H = %d, seeking %s spike marks", width, height, alliance);
         telemetry.update();
-        RobotLog.dd("Vision","RTDP inital W %d, H = %d spike marks", width, height, alliance);
-        RobotLog.dd("detectedPosition", String.valueOf(detectedPosition));
+        RobotLog.dd("RBR","RTDP init W %d, H = %d, alliance = %s", width, height, alliance.toString());
+        RobotLog.dd("RBR", "RTDP init detectedPosition = ", String.valueOf(detectedPosition));
         int topRegionWidth = width - (2 * SIDE_REGION_WIDTH);
         //leftRegion = new Rect(new Point(0, TOP_REGION_HEIGHT), new Point(SIDE_REGION_WIDTH + SKEW_OFFSET, height - 1));
         //centerRegion = new Rect(new Point(SIDE_REGION_WIDTH - SKEW_OFFSET, 0), new Point(SIDE_REGION_WIDTH + topRegionWidth + SKEW_OFFSET, TOP_REGION_HEIGHT));
@@ -90,6 +100,8 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
         leftRegion = new Rect(new Point(0, 0), new Point(SIDE_REGION_WIDTH, height - 1));
         centerRegion = new Rect(new Point(SIDE_REGION_WIDTH, 0), new Point(SIDE_REGION_WIDTH + topRegionWidth, TOP_REGION_HEIGHT));
         rightRegion = new Rect(new Point(width - SIDE_REGION_WIDTH, 0), new Point(width - 1, height - 1));
+
+        lastFrame.set(Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565));
     }
 
     @Override
@@ -100,13 +112,11 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
         Imgproc.cvtColor(frame, hsvMat, Imgproc.COLOR_BGR2HSV);  //convert to HSV color space for better color detection
         if (alliance != Alliance.BLUE) { //TODO: FIND A REAL SOLUTION TO THE COLOR PROBLEM
             Core.inRange(hsvMat, ColorRange.BLUE_LOWER_RANGE, ColorRange.BLUE_UPPER_RANGE, colorContoursMat); //select only blue pixels
-            RobotLog.dd("processFrame","blue");
         } else {
             //red color range wraps around, so we need to merge two masks
             Core.inRange(hsvMat, ColorRange.RED_LOWER_RANGE_1, ColorRange.RED_UPPER_RANGE_1, redMask1); //red pixels 1
             Core.inRange(hsvMat, ColorRange.RED_LOWER_RANGE_2, ColorRange.RED_UPPER_RANGE_2, redMask2); //red pixels 2
             Core.bitwise_or(redMask1, redMask2, colorContoursMat); //combine masks to select all red pixels covering both color ranges
-            RobotLog.dd("processFrame","red");
         }
 
         //find color contours / blobs
@@ -140,6 +150,11 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
             telemetry.addData("Vision",  "RTDP found %d bounding rectangles for spike marks", spikeBoundingRectangles.size());
             telemetry.update();
         }
+
+        //convert OpenCV image Matrix to Android Bitmap for use in FTC dashboard
+        Bitmap b = Bitmap.createBitmap(frame.width(), frame.height(), Bitmap.Config.RGB_565);
+        Utils.matToBitmap(frame, b);
+        lastFrame.set(b);
 
         return spikeBoundingRectangles;
     }
@@ -215,10 +230,10 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
              */
         }
 
-        if (detectedPosition == null && !androidGraphicsSpikeBoundingRectangles.isEmpty()) {
+        if (!stopLookingWhenTargetFound || (detectedPosition == null && !androidGraphicsSpikeBoundingRectangles.isEmpty())) {
             Map.Entry<TargetPosition, Integer> targetEntry;
 
-            boolean allSpikesDetected = candidateSpikeRectCountByPosition.entrySet().stream().allMatch(entry -> entry.getValue()>0);
+            boolean allSpikesDetected = candidateSpikeRectCountByPosition.entrySet().stream().allMatch(entry -> entry.getValue() > 0);
             if (allSpikesDetected) {
                 if (randomizationItem == RandomizationItem.PIXEL) {
                     //consider the position with the most detected rectangles the target (the white pixel should cause the single rect to break into multiple)
@@ -232,9 +247,15 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
                 detectedPosition = targetEntry.getKey();
                 telemetry.addData("Vision", "Target scoring position detected: %s with %d rects", detectedPosition, targetEntry.getValue());
                 telemetry.update();
-                RobotLog.dd("Vision", "Target scoring position detected %s with %d rects", detectedPosition, targetEntry.getValue());
+                RobotLog.dd("RBR", "Vision - target scoring position detected %s with %d rects", detectedPosition, targetEntry.getValue());
             }
         }
+    }
+
+    @Override
+    public void getFrameBitmap(Continuation<? extends Consumer<Bitmap>> continuation) {
+        //send the frame bitmap to FTC dashboard
+        continuation.dispatch(bitmapConsumer -> bitmapConsumer.accept(lastFrame.get()));
     }
 
     //convert opencv Rect to android.graphics.Rect
@@ -265,5 +286,9 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
 
     public void setPixelRecognition(Recognition pixelRecognition) {
         this.pixelRecognition = pixelRecognition;
+    }
+
+    public void setStopLookingWhenTargetFound(boolean stopLookingWhenTargetFound) {
+        this.stopLookingWhenTargetFound = stopLookingWhenTargetFound;
     }
 }

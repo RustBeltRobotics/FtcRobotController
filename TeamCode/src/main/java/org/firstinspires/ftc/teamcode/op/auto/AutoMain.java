@@ -5,7 +5,6 @@ import android.annotation.SuppressLint;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -32,6 +31,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.tfod.TfodProcessor;
 
 import java.util.List;
+
 @Config
 @Autonomous(name="Auto-comp", group="Robot")
 //@Disabled
@@ -164,10 +164,6 @@ public class AutoMain extends LinearOpMode {
 
         visionPortal.setActiveCamera(webcam2);
 
-        visionPortal.setProcessorEnabled(cameraStreamProcessor, true);
-        //start streaming webcam frames to FTC dashboard
-        FtcDashboard.getInstance().startCameraStream(cameraStreamProcessor, 0);
-
         // Wait for the game to start (driver presses PLAY)
 
         telemetry.addData("alliance", alliance);
@@ -175,8 +171,6 @@ public class AutoMain extends LinearOpMode {
 
         //test robotlog
         RobotLog.dd("status", "hi computer");
-
-        RTDP.setDetectedPosition(null);
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
@@ -189,14 +183,18 @@ public class AutoMain extends LinearOpMode {
         visionPortal.setProcessorEnabled(aprilTag, true);
         visionPortal.setProcessorEnabled(tfod, false);
         visionPortal.setProcessorEnabled(RTDP, true);
+        FtcDashboard.getInstance().startCameraStream(RTDP, 0);
 
-        RTDP.setDetectedPosition(TargetPosition.LEFT);
+        RTDP.setDetectedPosition(null);
         while (RTDP.getDetectedPosition() == null) {
-            RobotLog.dd("status","looking for tape");
+            RobotLog.dd("status","looking for target spike mark");
             telemetry.addData("Status", "where is the tape :(");
             telemetry.update();
         }
+        FtcDashboard.getInstance().stopCameraStream();
         visionPortal.setProcessorEnabled(RTDP, false);
+        visionPortal.setProcessorEnabled(cameraStreamProcessor, true);
+        FtcDashboard.getInstance().startCameraStream(cameraStreamProcessor, 0);
 
         visionPortal.setActiveCamera(webcam1);
         updatePosApril();
@@ -697,4 +695,5 @@ public class AutoMain extends LinearOpMode {
             }
         }
     }
+
 }
