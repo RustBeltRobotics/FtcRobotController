@@ -576,13 +576,12 @@ public class AutoMain extends LinearOpMode {
         targetHeading = desiredHeading;  // Save for telemetry
 
         // Determine the heading current error
-        headingError = -(targetHeading - getHeading());
+        headingError = targetHeading - getHeading();
         telemetry.addData("Heading err:", headingError);
         telemetry.addData("Heading:", getHeading());
 
         // Normalize the error to be within +/- 180 degrees
-        while (headingError > 180) headingError -= 360;
-        while (headingError <= -180) headingError += 360;
+        headingError = AngleUnit.normalizeDegrees(headingError);
 
         // Multiply the error by the gain to determine the required steering correction/  Limit the result to +/- 1.0
         return Range.clip(headingError * proportionalGain, -1, 1);
@@ -616,16 +615,17 @@ public class AutoMain extends LinearOpMode {
     //return the current rotational angle of the robot in the XY plane
     public double getHeading() {
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
-        if (alliance == Alliance.BLUE) {
-            return -(orientation.getYaw(AngleUnit.DEGREES) + 180);
-        } else {
-            return -(orientation.getYaw(AngleUnit.DEGREES));
-        }
+        return orientation.getYaw(AngleUnit.DEGREES);
+//        if (alliance == Alliance.BLUE) {
+//            return -(orientation.getYaw(AngleUnit.DEGREES) + 180);
+//        } else {
+//            return -(orientation.getYaw(AngleUnit.DEGREES));
+//        }
     }
 
     //drive to a point on the field using X and Y coordinates in (units inches)
-    private void smartDrive(double X, double Y) {
-        double triX = positionX - X;
+    private void smartDrive(double Y, double X) {
+        double triX = positionX - X; //SWAPPED
         double triY = positionY - Y;
         RobotLog.dd("triangle X:", String.valueOf(triX));
         RobotLog.dd("triangle Y:", String.valueOf(triY));
