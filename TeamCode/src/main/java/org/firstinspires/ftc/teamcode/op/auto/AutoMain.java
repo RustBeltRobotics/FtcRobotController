@@ -8,6 +8,7 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -179,7 +180,18 @@ public class AutoMain extends LinearOpMode {
         //------------------------------------------------------------------------------------------
         //                               ! START ROUTINE HERE !
         //------------------------------------------------------------------------------------------
-        visionPortal.setActiveCamera(webcam2);
+
+        turnToHeading(TURN_SPEED, 20);
+
+
+        smartDrive(-24,-24);
+        smartDrive(24,-24);
+        smartDrive(24,24);
+        smartDrive(-24,24);
+
+
+
+        visionPortal.setActiveCamera(webcam1);
         visionPortal.setProcessorEnabled(aprilTag, true);
         visionPortal.setProcessorEnabled(tfod, false);
         visionPortal.setProcessorEnabled(RTDP, true);
@@ -196,9 +208,9 @@ public class AutoMain extends LinearOpMode {
         visionPortal.setProcessorEnabled(cameraStreamProcessor, true);
         FtcDashboard.getInstance().startCameraStream(cameraStreamProcessor, 0);
 
-        visionPortal.setActiveCamera(webcam1);
-        updatePosApril();
-        visionPortal.setActiveCamera(webcam2);
+//        visionPortal.setActiveCamera(webcam1);
+//        updatePosApril();
+//        visionPortal.setActiveCamera(webcam2);
 
         RobotLog.dd("rtdp",RTDP.getDetectedPosition().toString());
         RobotLog.dd("status","i think i found the tape");
@@ -379,7 +391,6 @@ public class AutoMain extends LinearOpMode {
             leftPower /= max;
             rightPower /= max;
         }
-
         // Send powers to the wheels.
         left1.setPower(leftPower);
         left2.setPower(leftPower);
@@ -588,25 +599,27 @@ public class AutoMain extends LinearOpMode {
             TURN_SPEED = getSteeringCorrection(heading, TURN_GAIN);
 
             // Clip the speed to the maximum permitted value.
-            TURN_SPEED = Range.clip(TURN_SPEED, -maxTurnSpeed, maxTurnSpeed);
+            TURN_SPEED = Range.clip(TURN_SPEED, maxTurnSpeed, -maxTurnSpeed);
 
             // Pivot in place by applying the turning correction
+            RobotLog.dd("heading:", String.valueOf(getHeading()));
+            RobotLog.dd("heading err:", String.valueOf(headingError));
             moveRobot(0, TURN_SPEED);
             //update our position to account for slippage
             updatePosApril();
         }
         // Stop all motion;
         RobotLog.dd("completed:", "turnToHeading");
-        //moveRobot(0, 0);
+        moveRobot(0, 0);
     }
 
     //return the current rotational angle of the robot in the XY plane
     public double getHeading() {
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
         if (alliance == Alliance.BLUE) {
-            return -(orientation.getYaw(AngleUnit.DEGREES) + 270);
+            return -(orientation.getYaw(AngleUnit.DEGREES) + 180);
         } else {
-            return -(orientation.getYaw(AngleUnit.DEGREES) + 90);
+            return -(orientation.getYaw(AngleUnit.DEGREES));
         }
     }
 
