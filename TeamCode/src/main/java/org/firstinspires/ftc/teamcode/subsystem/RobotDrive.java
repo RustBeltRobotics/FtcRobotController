@@ -19,7 +19,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 @Config
 public class RobotDrive {
 
-    public static Double TURN_AUTHORITY = 1.0; //percentage of the turn stick input that goes through
+    public static Double TURN_AUTHORITY = 0.5; //percentage of the turn stick input that goes through
     private final HardwareMap hardwareMap;
     private final ElapsedTime runtime;
     private final Telemetry telemetry;

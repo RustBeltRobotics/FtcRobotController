@@ -50,7 +50,7 @@ public class AutoMain extends LinearOpMode {
     public static double TURN_SPEED = 0.5;
     public static double SPEED_GAIN =   0.02 ;   //  Speed Control "Gain". eg: Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
     public static double TURN_GAIN = 0.005 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
-    public static double HEADING_THRESHOLD = 5.0 ; // How close must the heading get to the target before moving to next step.
+    public static double HEADING_THRESHOLD = 1.0 ; // How close must the heading get to the target before moving to next step.
     public static int hope = 2;
     //----------------------------------------------------------------------------------------------
 
@@ -181,14 +181,11 @@ public class AutoMain extends LinearOpMode {
         //                               ! START ROUTINE HERE !
         //------------------------------------------------------------------------------------------
 
-        turnToHeading(TURN_SPEED, 20);
+        dumbDrive(1,1,1,1);
+        turnToHeading(1, 90);
 
-
-        smartDrive(-24,-24);
-        smartDrive(24,-24);
-        smartDrive(24,24);
-        smartDrive(-24,24);
-
+        smartDrive(-36,-36);
+        smartDrive(36,-36);
 
 
         visionPortal.setActiveCamera(webcam1);
@@ -318,23 +315,39 @@ public class AutoMain extends LinearOpMode {
 
     // *NEW* moves the arm into one of two super convenient positions !
     private void moveArm(String thingToDo) {
-        int scoringPos = 0;  //TODO: add real values for these
-        int intakePos = 0;
+        int scoringPos = -324;  //TODO: add real values for these
+        int intakePos = 35;
 
-        // Turn On RUN_TO_POSITION
-        arm1.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        arm2.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-
-        if (thingToDo == "scoring") {
+        if (thingToDo.equals("scoring")) {
             arm1.setTargetPosition(scoringPos);
-            arm2.setTargetPosition(scoringPos);
-        } else if (thingToDo == "intake") {
+            arm1.setPower(.5);
+            while(arm1.isBusy()){
+                arm2.setPower(.5);
+                arm2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            }
+            arm2.setPower(0);
+        } else if (thingToDo.equals("intake")) {
             arm1.setTargetPosition(intakePos);
-            arm2.setTargetPosition(intakePos);
-        } else {
+            arm1.setPower(.5);
+            while(arm1.isBusy()){
+                arm2.setPower(.5);
+                arm2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            }
+            arm2.setPower(0);
+        } else if (thingToDo.equals("offGround")) {
+            arm1.setTargetPosition(300);
+            arm1.setPower(.5);
+            while(arm1.isBusy()){
+                arm2.setPower(.5);
+                arm2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            }
+            arm2.setPower(0);
+        }else {
             telemetry.addData("moveArm() err:", "invalid value given");
             telemetry.update();
         }
+        // Turn On RUN_TO_POSITION
+        arm1.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
     }
     //drop pixels with input for 1 or 2 pixels to be dropped
     private void outtake(int numPixels) {
@@ -577,6 +590,7 @@ public class AutoMain extends LinearOpMode {
 
         // Determine the heading current error
         headingError = -(targetHeading - getHeading());
+
         telemetry.addData("Heading err:", headingError);
         telemetry.addData("Heading:", getHeading());
 
