@@ -47,6 +47,7 @@ public class SpikeDetectionOp extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         initOp();
+        visionPortal.setActiveCamera(webcam2);
 
         // Establish Min and Max Gains and Exposure.  Then set a low exposure with high gain
         getCameraSetting();
@@ -119,7 +120,6 @@ public class SpikeDetectionOp extends LinearOpMode {
                 .addProcessors(RTDP)
                 .build();
 
-        visionPortal.setActiveCamera(webcam2);
         visionPortal.setProcessorEnabled(RTDP, true);
         FtcDashboard.getInstance().startCameraStream(RTDP, 0);
     }

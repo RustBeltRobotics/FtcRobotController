@@ -49,7 +49,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 public class dataOp extends OpMode
 {
     // Declare OpMode members.
-    private Gamepad gamepad1;
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotorEx left1 = null;
     private DcMotorEx left2 = null;
@@ -59,8 +58,8 @@ public class dataOp extends OpMode
     private DcMotorEx arm1 = null;
     private DcMotorEx arm2 = null;
     private DcMotorEx intake1 = null;
-    private IMU imu = null;
-    YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+//    private IMU imu = null;
+//    YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
 
 
     /*
@@ -68,6 +67,10 @@ public class dataOp extends OpMode
      */
     @Override
     public void init() {
+        intake1 = hardwareMap.get(DcMotorEx.class, "I1");
+        intake1.setDirection(DcMotorEx.Direction.FORWARD);
+        intake1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+
         left1 = hardwareMap.get(DcMotorEx.class, "L1");
         left2 = hardwareMap.get(DcMotorEx.class, "L2");
 
@@ -107,12 +110,13 @@ public class dataOp extends OpMode
 
         arm1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
         arm2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+
+
+        arm1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        arm2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         //intake
-        intake1 = hardwareMap.get(DcMotorEx.class, "I1");
 
-        intake1.setDirection(DcMotorEx.Direction.FORWARD);
 
-        intake1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
 
         //setup FTC dashboard telemetry
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -131,7 +135,9 @@ public class dataOp extends OpMode
         telemetry.addData("arm1 encoder",arm1.getCurrentPosition());
         telemetry.addData("arm2 encoder",arm2.getCurrentPosition());
         telemetry.addData("intake encoder",intake1.getCurrentPosition());
-        telemetry.addData("heading", orientation.getYaw(AngleUnit.DEGREES));
+
+
+//        telemetry.addData("heading", orientation.getYaw(AngleUnit.DEGREES));
         telemetry.update();
 
         if ( gamepad1.a == true ) {
@@ -158,6 +164,13 @@ public class dataOp extends OpMode
      */
     @Override
     public void loop() {
+        left1.setPower(gamepad1.left_stick_x);
+        left2.setPower(gamepad1.left_stick_y);
+        right1.setPower(gamepad2.right_stick_x);
+        right2.setPower(gamepad2.right_stick_y);
+
+        arm1.setPower(gamepad1.right_stick_x);
+        arm2.setPower(gamepad1.right_stick_y);
     }
 
     /*

@@ -18,6 +18,8 @@ import com.qualcomm.robotcore.util.RobotLog;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
@@ -32,6 +34,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.tfod.TfodProcessor;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Config
 @Autonomous(name="Auto-comp", group="Robot")
@@ -52,6 +55,8 @@ public class AutoMain extends LinearOpMode {
     public static double TURN_GAIN = 0.03 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
     public static double HEADING_THRESHOLD = 0.5 ; // How close must the heading get to the target before moving to next step.
     public static int hope = 2;
+    public static int gain = 100;
+    public static double exposureMS = 10.0;
     //----------------------------------------------------------------------------------------------
 
     /* Declare OpMode members. */
@@ -183,17 +188,13 @@ public class AutoMain extends LinearOpMode {
         //                               ! START ROUTINE HERE !
         //------------------------------------------------------------------------------------------
 
-//        smartDrive(-36,-60);  //worst case scenario code
-//        smartDrive(60,-60);
-
-
-        visionPortal.setActiveCamera(webcam2);
-
         visionPortal.setProcessorEnabled(aprilTag, true);
         visionPortal.setProcessorEnabled(tfod, false);
         visionPortal.setProcessorEnabled(RTDP, true);
 
         FtcDashboard.getInstance().startCameraStream(RTDP, 30);
+
+        visionPortal.setActiveCamera(webcam2);
 
         while (RTDP.getDetectedPosition() == null) {
             RobotLog.dd("status","looking for target spike mark");
@@ -210,8 +211,7 @@ public class AutoMain extends LinearOpMode {
 
         RobotLog.dd("rtdp",RTDP.getDetectedPosition().toString());
 
-        while (opModeIsActive()){}
-
+        getHeading();
         //position the intake over the correct spike mark
         moveToSpike(RTDP.getDetectedPosition());
         //place 1 pixel
@@ -697,27 +697,33 @@ public class AutoMain extends LinearOpMode {
             switch (detectedPosition) {
                 //TODO: "fill these in later"
                 case LEFT:
-                    turnToHeading(1, 0);
-                    dumbDrive(0.5, .2, .2, 5);
+                    smartDrive(-31.5,-36.0);
+                    turnToHeading(.1,0);
+                    RobotLog.dd("movetospike", "complete");
                 case CENTER:
                     smartDrive(-31.5,-36.0);
                     turnToHeading(.1,0);
+                    RobotLog.dd("movetospike", "complete");
                 case RIGHT:
-                    turnToHeading(1, 0);
-                    dumbDrive(0.5, .2, .2, 5);
+                    smartDrive(-31.5,-36.0);
+                    turnToHeading(.1,0);
+                    RobotLog.dd("movetospike", "complete");
             }
         } else if (alliance == Alliance.RED) {
             switch (detectedPosition) {
                 //TODO: "fill these in later"
                 case LEFT:
-                    turnToHeading(1, 0);
-                    dumbDrive(0.5, .2, .2, 5);
+                    smartDrive(-31.5,-36.0);
+                    turnToHeading(.1,0);
+                    RobotLog.dd("movetospike", "complete");
                 case CENTER:
-                    turnToHeading(1, 0);
-                    dumbDrive(0.5, .2, .2, 5);
+                    smartDrive(-31.5,-36.0);
+                    turnToHeading(.1,0);
+                    RobotLog.dd("movetospike", "complete"); //correct
                 case RIGHT:
-                    turnToHeading(1, 0);
-                    dumbDrive(0.5, .2, .2, 5);
+                    smartDrive(-31.5,-36.0);
+                    turnToHeading(.1,0);
+                    RobotLog.dd("movetospike", "complete");
             }
         }
     }
