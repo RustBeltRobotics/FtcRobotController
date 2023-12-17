@@ -47,10 +47,10 @@ public class AutoMain extends LinearOpMode {
 
     //tuning variables for movement
     public static double DRIVE_SPEED = .25;
-    public static double TURN_SPEED = 0.5;
+    public static double TURN_SPEED = 0.1;
     public static double SPEED_GAIN =   0.02 ;   //  Speed Control "Gain". eg: Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
-    public static double TURN_GAIN = 0.005 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
-    public static double HEADING_THRESHOLD = 1.0 ; // How close must the heading get to the target before moving to next step.
+    public static double TURN_GAIN = 0.03 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+    public static double HEADING_THRESHOLD = 0.5 ; // How close must the heading get to the target before moving to next step.
     public static int hope = 2;
     //----------------------------------------------------------------------------------------------
 
@@ -173,19 +173,17 @@ public class AutoMain extends LinearOpMode {
         //test robotlog
         RobotLog.dd("status", "hi computer");
 
+
+
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
-
 
         //------------------------------------------------------------------------------------------
         //                               ! START ROUTINE HERE !
         //------------------------------------------------------------------------------------------
 
-        dumbDrive(1,1,1,1);
-        turnToHeading(1, 90);
-
-        smartDrive(-36,-36);
-        smartDrive(36,-36);
+        smartDrive(-36,-60);
+        smartDrive(60,-60);
 
 
         visionPortal.setActiveCamera(webcam1);
@@ -595,8 +593,7 @@ public class AutoMain extends LinearOpMode {
         telemetry.addData("Heading:", getHeading());
 
         // Normalize the error to be within +/- 180 degrees
-        while (headingError > 180) headingError -= 360;
-        while (headingError <= -180) headingError += 360;
+        headingError = AngleUnit.normalizeDegrees(headingError);
 
         // Multiply the error by the gain to determine the required steering correction/  Limit the result to +/- 1.0
         return Range.clip(headingError * proportionalGain, -1, 1);
@@ -607,7 +604,7 @@ public class AutoMain extends LinearOpMode {
         getSteeringCorrection(heading, TURN_GAIN);
 
         // keep looping while we are still active, and not on heading.
-        while (opModeIsActive() && (Math.abs(headingError) > HEADING_THRESHOLD)) {
+        while (opModeIsActive() && Math.abs(headingError) > HEADING_THRESHOLD) {
 
             // Determine required steering to keep on heading
             TURN_SPEED = getSteeringCorrection(heading, TURN_GAIN);
@@ -618,9 +615,8 @@ public class AutoMain extends LinearOpMode {
             // Pivot in place by applying the turning correction
             RobotLog.dd("heading:", String.valueOf(getHeading()));
             RobotLog.dd("heading err:", String.valueOf(headingError));
+
             moveRobot(0, TURN_SPEED);
-            //update our position to account for slippage
-            updatePosApril();
         }
         // Stop all motion;
         RobotLog.dd("completed:", "turnToHeading");
@@ -646,7 +642,7 @@ public class AutoMain extends LinearOpMode {
 
         double headingIWant = -Math.toDegrees(Math.atan(triX/triY));
         RobotLog.dd("triangle angle",String.valueOf(headingIWant));
-        turnToHeading(1, headingIWant);
+        turnToHeading(TURN_SPEED, headingIWant);
 
         double range = Math.sqrt((Math.pow(triX, 2) + (Math.pow(triY, 2))));
         dumbDrive(DRIVE_SPEED, range, range, 30);

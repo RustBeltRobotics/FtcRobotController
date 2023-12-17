@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystem;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -14,7 +15,14 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 /**
  * Subsystem for Arm mechanism (extension, rotation, etc.)
  */
+@Config
 public class RobotArm {
+    private double snap;
+    boolean aToggle = false;
+    double powerA;
+    double powerI;
+    double powerE;
+    public static int scoringPos = -354;
     private final ElapsedTime runtime;
     private final HardwareMap hardwareMap;
     private final Telemetry telemetry;
@@ -50,26 +58,46 @@ public class RobotArm {
         ext1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
         intake1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
 
+        arm1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        arm2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        arm1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        arm2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+
         telemetry.addData("Status", "Arm Initialized");
     }
 
     public void loop() {
 
-        if (gamepad2.a == true) {
-            moveArm("scoring");
+        RobotLog.dd("arm", String.valueOf(arm1.getCurrentPosition()));
+
+        if ((gamepad2.a == true) && (runtime.milliseconds() > snap+250)) {
+            snap = runtime.milliseconds();
+            aToggle = true;
+        } else { aToggle = false; }
+
+        if (aToggle == true) {
+            arm1.setTargetPosition(scoringPos);
+            arm1.setPower(.5);
+            arm1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            if (arm1.isBusy()) {
+                arm2.setPower(.5);
+                arm2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            }
+        } else {
+            arm1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            arm1.setPower(0);
+            arm2.setPower(0);
+            powerA = (Range.clip(gamepad2.left_stick_y, -1.0, 1.0) * ARM_AUTHORITY);
+            arm1.setPower(powerA);
+            arm2.setPower(-powerA);
+            int saved = arm1.getCurrentPosition();
+            if (gamepad2.left_stick_y == 0) {
+                arm1.setTargetPosition(saved);
+            }
         }
-
-
         RobotLog.dd("gamepad lx", String.valueOf(gamepad2.left_stick_y));
-        //var for arm power value
-        double powerA;
-        double powerI;
-        double powerE;
-
-        //set arm power to the stick output
-        powerA = (Range.clip(gamepad2.left_stick_y, -1.0, 1.0) * ARM_AUTHORITY);
-        arm1.setPower(powerA);
-        arm2.setPower(-powerA);
 
         powerE = Range.clip(gamepad2.right_stick_y, -1.0, 1.0);
         ext1.setPower(-powerE);
@@ -83,39 +111,5 @@ public class RobotArm {
 
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.addData("ArmMotors", "power:", powerA);
-    }
-
-    private void moveArm(String thingToDo) {
-        int scoringPos = -324;
-        int intakePos = 35;
-
-        if (thingToDo.equals("scoring")) {
-            arm1.setTargetPosition(scoringPos);
-            arm1.setPower(.5);
-            while (arm1.isBusy()) {
-                arm2.setPower(.5);
-                arm2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            }
-            arm2.setPower(0);
-        } else if (thingToDo.equals("intake")) {
-            arm1.setTargetPosition(intakePos);
-            arm1.setPower(.5);
-            while (arm1.isBusy()) {
-                arm2.setPower(.5);
-                arm2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            }
-            arm2.setPower(0);
-        } else if (thingToDo.equals("offGround")) {
-            arm1.setTargetPosition(300);
-            arm1.setPower(.5);
-            while (arm1.isBusy()) {
-                arm2.setPower(.5);
-                arm2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            }
-            arm2.setPower(0);
-        } else {
-            telemetry.addData("moveArm() err:", "invalid value given");
-            telemetry.update();
-        }
     }
 }
