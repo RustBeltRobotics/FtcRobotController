@@ -98,7 +98,7 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
         //rightRegion = new Rect(new Point(width - SIDE_REGION_WIDTH - SKEW_OFFSET, TOP_REGION_HEIGHT), new Point(width - 1, height - 1));
 
         leftRegion = new Rect(new Point(0, 0), new Point(SIDE_REGION_WIDTH, height - 1));
-        centerRegion = new Rect(new Point(SIDE_REGION_WIDTH, 0), new Point(SIDE_REGION_WIDTH + topRegionWidth, TOP_REGION_HEIGHT));
+        centerRegion = new Rect(new Point(SIDE_REGION_WIDTH, 0), new Point(SIDE_REGION_WIDTH + topRegionWidth, height - 1));
         rightRegion = new Rect(new Point(width - SIDE_REGION_WIDTH, 0), new Point(width - 1, height - 1));
 
         lastFrame.set(Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565));

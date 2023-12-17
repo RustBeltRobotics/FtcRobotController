@@ -164,6 +164,7 @@ public class AutoMain extends LinearOpMode {
         initPose(startingPositionLetter, startingPositionNumber);
 
         visionPortal.setActiveCamera(webcam2);
+        FtcDashboard.getInstance().startCameraStream(RTDP, 20);
 
         // Wait for the game to start (driver presses PLAY)
 
@@ -182,33 +183,35 @@ public class AutoMain extends LinearOpMode {
         //                               ! START ROUTINE HERE !
         //------------------------------------------------------------------------------------------
 
-        smartDrive(-36,-60);
-        smartDrive(60,-60);
+//        smartDrive(-36,-60);  //worst case scenario code
+//        smartDrive(60,-60);
 
 
-        visionPortal.setActiveCamera(webcam1);
+        visionPortal.setActiveCamera(webcam2);
+
         visionPortal.setProcessorEnabled(aprilTag, true);
         visionPortal.setProcessorEnabled(tfod, false);
         visionPortal.setProcessorEnabled(RTDP, true);
-        FtcDashboard.getInstance().startCameraStream(RTDP, 0);
 
-        RTDP.setDetectedPosition(null);
+        FtcDashboard.getInstance().startCameraStream(RTDP, 30);
+
         while (RTDP.getDetectedPosition() == null) {
             RobotLog.dd("status","looking for target spike mark");
             telemetry.addData("Status", "where is the tape :(");
             telemetry.update();
         }
+
         FtcDashboard.getInstance().stopCameraStream();
+
         visionPortal.setProcessorEnabled(RTDP, false);
         visionPortal.setProcessorEnabled(cameraStreamProcessor, true);
-        FtcDashboard.getInstance().startCameraStream(cameraStreamProcessor, 0);
 
-//        visionPortal.setActiveCamera(webcam1);
-//        updatePosApril();
-//        visionPortal.setActiveCamera(webcam2);
+        FtcDashboard.getInstance().startCameraStream(cameraStreamProcessor, 20);
 
         RobotLog.dd("rtdp",RTDP.getDetectedPosition().toString());
-        RobotLog.dd("status","i think i found the tape");
+
+        while (opModeIsActive()){}
+
         //position the intake over the correct spike mark
         moveToSpike(RTDP.getDetectedPosition());
         //place 1 pixel
@@ -697,8 +700,8 @@ public class AutoMain extends LinearOpMode {
                     turnToHeading(1, 0);
                     dumbDrive(0.5, .2, .2, 5);
                 case CENTER:
-                    turnToHeading(1, 0);
-                    dumbDrive(0.5, .2, .2, 5);
+                    smartDrive(-31.5,-36.0);
+                    turnToHeading(.1,0);
                 case RIGHT:
                     turnToHeading(1, 0);
                     dumbDrive(0.5, .2, .2, 5);
