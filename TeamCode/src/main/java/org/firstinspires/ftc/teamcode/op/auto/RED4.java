@@ -19,6 +19,9 @@ import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.teamcode.model.Alliance;
@@ -52,8 +55,6 @@ public class RED4 extends LinearOpMode {
     public static double TURN_GAIN = 0.03 ;   //  Turn Control "Gain".  eg: Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
     public static double HEADING_THRESHOLD = 0.5 ; // How close must the heading get to the target before moving to next step.
     public static int hope = 2;
-    public static int gain = 100;
-    public static double exposureMS = 10.0;
     //----------------------------------------------------------------------------------------------
 
     /* Declare OpMode members. */
@@ -577,7 +578,7 @@ public class RED4 extends LinearOpMode {
         positionY = YstartPos;
         positionX = arrayOfPossibilities[startingPositionX - 1];
 
-        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
+        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
         RevHubOrientationOnRobot.UsbFacingDirection usbDirection = RevHubOrientationOnRobot.UsbFacingDirection.UP;
         RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
 
@@ -630,12 +631,12 @@ public class RED4 extends LinearOpMode {
     }
 
     //return the current rotational angle of the robot in the XY plane
-    public double getHeading() {
-        YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+    public float getHeading() {
+        Orientation orientation = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
         if (alliance == Alliance.BLUE) {
-            return -(orientation.getYaw(AngleUnit.DEGREES) + 180);
+            return AngleUnit.normalizeDegrees(orientation.firstAngle + 180);
         } else {
-            return (orientation.getYaw(AngleUnit.DEGREES));
+            return (orientation.firstAngle);
         }
     }
 
