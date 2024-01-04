@@ -31,11 +31,13 @@ package org.firstinspires.ftc.teamcode.op.tele;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -58,7 +60,7 @@ public class dataOp extends OpMode
     private DcMotorEx arm1 = null;
     private DcMotorEx arm2 = null;
     private DcMotorEx intake1 = null;
-//    private IMU imu = null;
+    private IMU imu = null;
 //    YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
 
 
@@ -77,11 +79,11 @@ public class dataOp extends OpMode
         right1 = hardwareMap.get(DcMotorEx.class, "R1");
         right2 = hardwareMap.get(DcMotorEx.class, "R2");
         //set default motor directions
-        left1.setDirection(DcMotorEx.Direction.FORWARD);
-        left2.setDirection(DcMotorEx.Direction.REVERSE);
+        left1.setDirection(DcMotorEx.Direction.REVERSE);
+        left2.setDirection(DcMotorEx.Direction.FORWARD);
 
-        right1.setDirection(DcMotorEx.Direction.FORWARD);
-        right2.setDirection(DcMotorEx.Direction.REVERSE);
+        right1.setDirection(DcMotorEx.Direction.REVERSE);
+        right2.setDirection(DcMotorEx.Direction.FORWARD);
 
         left1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
         left2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
@@ -111,12 +113,19 @@ public class dataOp extends OpMode
         arm1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
         arm2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
 
-
         arm1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         arm2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         //intake
 
+        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
+        RevHubOrientationOnRobot.UsbFacingDirection usbDirection = RevHubOrientationOnRobot.UsbFacingDirection.UP;
+        RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
 
+        // Now initialize the IMU with this mounting orientation
+        // This sample expects the IMU to be in a REV Hub and named "imu".
+        imu = hardwareMap.get(IMU.class, "imu");
+        imu.initialize(new IMU.Parameters(orientationOnRobot));
+        imu.resetYaw(); //zero out our rotation angle
 
         //setup FTC dashboard telemetry
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -128,6 +137,7 @@ public class dataOp extends OpMode
     @Override
     public void init_loop() {
         telemetry.addData("! Press","A to reset encoders");
+        telemetry.addData("IMU",imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
         telemetry.addData("L1 encoder",left1.getCurrentPosition());
         telemetry.addData("L2 encoder",left2.getCurrentPosition());
         telemetry.addData("R1 encoder",right1.getCurrentPosition());

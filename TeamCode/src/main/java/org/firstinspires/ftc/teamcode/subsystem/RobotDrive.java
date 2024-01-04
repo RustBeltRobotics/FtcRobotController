@@ -75,8 +75,8 @@ public class RobotDrive {
             if (driveType == DriveType.ARCADE) {
                 double drive = gamepad1.left_stick_y;
                 double turn = gamepad1.right_stick_x * TURN_AUTHORITY;
-                velL = Range.clip(drive + turn, -1.0, 1.0);
-                velR = Range.clip(drive - turn, -1.0, 1.0);
+                velL = Range.clip(drive - turn, -1.0, 1.0);
+                velR = Range.clip(drive + turn, -1.0, 1.0);
             } else if (driveType == DriveType.TANK) {
                 velL = -gamepad1.left_stick_y;
                 velR = -gamepad1.right_stick_y;
@@ -87,8 +87,8 @@ public class RobotDrive {
             if (driveType == DriveType.ARCADE) {
                 double drive = -gamepad1.left_stick_y;
                 double turn = gamepad1.right_stick_x;
-                velL = Range.scale(drive + turn, -1.0, 1.0, .2, -1);
-                velR = Range.scale(drive - turn, -1.0, 1.0, .2, -1);
+                velL = Range.scale(drive - turn, -1.0, 1.0, .2, -1);
+                velR = Range.scale(drive + turn, -1.0, 1.0, .2, -1);
             } else if (driveType == DriveType.TANK) {
                 velL = -gamepad1.left_stick_y;
                 velR = -gamepad1.right_stick_y;

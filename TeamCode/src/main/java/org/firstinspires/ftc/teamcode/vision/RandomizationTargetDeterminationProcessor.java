@@ -50,6 +50,7 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
 
     //For sending OpenCV image Matrix frames to FTC Dashboard as Bitmaps
     private final AtomicReference<Bitmap> lastFrame = new AtomicReference<>(Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565));
+    private final AtomicReference<Mat> lastMatFrame = new AtomicReference<>(new Mat());
 
     //rectangular regions on the screen/frame we will look in for spike marks to determine target position
     private Rect leftRegion;
@@ -102,6 +103,7 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
         rightRegion = new Rect(new Point(width - SIDE_REGION_WIDTH, 0), new Point(width - 1, height - 1));
 
         lastFrame.set(Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565));
+        lastMatFrame.set(new Mat());
     }
 
     @Override
@@ -150,11 +152,6 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
             telemetry.addData("Vision",  "RTDP found %d bounding rectangles for spike marks", spikeBoundingRectangles.size());
             telemetry.update();
         }
-
-        //convert OpenCV image Matrix to Android Bitmap for use in FTC dashboard
-        Bitmap b = Bitmap.createBitmap(frame.width(), frame.height(), Bitmap.Config.RGB_565);
-        Utils.matToBitmap(frame, b);
-        lastFrame.set(b);
 
         return spikeBoundingRectangles;
     }
@@ -250,6 +247,13 @@ public class RandomizationTargetDeterminationProcessor implements VisionProcesso
                 RobotLog.dd("RBR", "Vision - target scoring position detected %s with %d rects", detectedPosition, targetEntry.getValue());
             }
         }
+
+        //convert OpenCV image Matrix to Android Bitmap for use in FTC dashboard
+        Bitmap b = Bitmap.createBitmap(onscreenWidth, onscreenHeight, Bitmap.Config.RGB_565);
+        Mat lastMatRef = lastMatFrame.get();
+        Utils.matToBitmap(lastMatRef, b);
+        lastFrame.set(b);
+        lastMatRef.release();
     }
 
     @Override
