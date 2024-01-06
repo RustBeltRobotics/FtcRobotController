@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -62,6 +63,8 @@ public abstract class CompetitionAuto extends LinearOpMode {
     public static double SPIKE_CENTER_TURN_ANGLE = 5.0;
     public static double SPIKE_SIDE_TURN_ANGLE = 40.0;
 
+    public static double BOARD_SIDE_ANGLE = 30.0; //TODO: test this on board
+
     private DcMotorEx left1 = null;
     private DcMotorEx left2 = null;
     private DcMotorEx right1 = null;
@@ -71,7 +74,7 @@ public abstract class CompetitionAuto extends LinearOpMode {
     private DcMotorEx intake1 = null;
     private DcMotorEx ext1 = null;
     private IMU imu = null;
-
+    Servo servo1;
     private CustomPropLocationDetector customPropLocationDetector = null;
 
     private PIDController pidRotate;
@@ -101,6 +104,8 @@ public abstract class CompetitionAuto extends LinearOpMode {
         arm2 = hardwareMap.get(DcMotorEx.class, "A2");
         intake1 = hardwareMap.get(DcMotorEx.class, "I1");
         ext1 = hardwareMap.get(DcMotorEx.class, "E1");
+
+        servo1 = hardwareMap.get(Servo.class, "S1");
 
         left1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         left2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
@@ -156,8 +161,8 @@ public abstract class CompetitionAuto extends LinearOpMode {
 
         customPropLocationDetector = new CustomPropLocationDetector(hardwareMap);
     }
-
     private void runAutoRoutine() {
+        liftBlade("up");
         DebugLog.log("Starting at position %s, alliance %s", getStartingPosition(), getAlliance());
         TargetPosition targetPosition = getRandomizationTargetPosition();
         if (targetPosition == null) {
@@ -241,6 +246,7 @@ public abstract class CompetitionAuto extends LinearOpMode {
                 DebugLog.log("Turning %s %.1f degrees", turnDirection, 90.0);
                 //drive forward approx 3 full tiles to get into row 5
                 DebugLog.log("Driving forward %.1f inches", CENTER_STAGE_TO_BACKDROP_DISTANCE);
+                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(90.0, turnDirection));
                 driveStraight(MAX_DRIVE_SPEED, CENTER_STAGE_TO_BACKDROP_DISTANCE, 5);
                 //TODO: will we have time/clearance to turn towards the scoring backdrop and drive forward to get into scoring position?
                 //      should we rather just drive straight ahead and park in row 6?
@@ -291,6 +297,8 @@ public abstract class CompetitionAuto extends LinearOpMode {
                 // turn towards final park position
                 // drive forward to final park position
             }
+
+            //TODO: finish this top section block to complete entire sequence or finish in standard position to do arm scoring sequence
         } else {
             //we are in the top half and already past the trusses
             boolean takeShortPath = false;
@@ -358,6 +366,7 @@ public abstract class CompetitionAuto extends LinearOpMode {
         //we should now be in row 5 roughly in front of the backdrop - exact bot position will depend on initial randomization target
         //TODO: use April Tags to orient ourselves to the correct L/C/R scoring slot
         raiseArmToScoringPosition();
+        driveStraight(MAX_DRIVE_SPEED,6,2);
 
         //TODO: drive forward more to get close enough to the scoring backdrop in order to drop pixel into slot ??
 
@@ -381,6 +390,8 @@ public abstract class CompetitionAuto extends LinearOpMode {
         //TODO: test/adjust this distance on actual field - may require slight distance adjustments based on initial randomization target
         DebugLog.log("Driving forward %.1f inches to final park position", BACKSTAGE_PARK_DISTANCE);
         driveStraight(MAX_DRIVE_SPEED, BACKSTAGE_PARK_DISTANCE, 5);
+
+        liftBlade("down");
     }
 
     private TargetPosition getRandomizationTargetPosition() {
@@ -663,6 +674,13 @@ public abstract class CompetitionAuto extends LinearOpMode {
             left2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
             right1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
             right2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        }
+    }
+    private void liftBlade(String TRGT){
+        if (TRGT.equals("up"))
+            servo1.setPosition(0);
+        else if (TRGT.equals("down")) {
+            servo1.setPosition(.7);
         }
     }
 }

@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.util.RobotLog;
@@ -17,8 +18,11 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
  */
 @Config
 public class RobotArm {
+    Servo servo1;
     private double snap;
+    private double snap2;
     boolean aToggle = false;
+    boolean bToggle = false;
     double powerA;
     double powerI;
     double powerE;
@@ -47,6 +51,7 @@ public class RobotArm {
         arm2 = hardwareMap.get(DcMotorEx.class, "A2");
         intake1 = hardwareMap.get(DcMotorEx.class, "I1");
         ext1 = hardwareMap.get(DcMotorEx.class, "E1");
+        servo1 = hardwareMap.get(Servo.class, "S1");
 
         arm1.setDirection(DcMotorEx.Direction.FORWARD);
         arm2.setDirection(DcMotorEx.Direction.REVERSE);
@@ -66,6 +71,8 @@ public class RobotArm {
 
 
         telemetry.addData("Status", "Arm Initialized");
+
+        liftBlade("down");
     }
 
     public void loop() {
@@ -97,6 +104,17 @@ public class RobotArm {
                 arm1.setTargetPosition(saved);
             }
         }
+        if ((gamepad2.b == true) && (runtime.milliseconds() > snap2+250)) {
+            snap2 = runtime.milliseconds();
+            bToggle = true;
+        } else { bToggle = false; }
+
+        if (bToggle == true) {
+            liftBlade("up");
+        } else {
+            liftBlade("down");
+        }
+
         RobotLog.dd("gamepad lx", String.valueOf(gamepad2.left_stick_y));
 
         powerE = Range.clip(gamepad2.right_stick_y, -1.0, 1.0);
@@ -111,5 +129,12 @@ public class RobotArm {
 
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.addData("ArmMotors", "power:", powerA);
+    }
+    private void liftBlade(String TRGT){
+        if (TRGT.equals("up"))
+            servo1.setPosition(0);
+        else if (TRGT.equals("down")) {
+            servo1.setPosition(.7);
+        }
     }
 }
