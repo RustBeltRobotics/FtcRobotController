@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Config
-public class CustomPropLocationDetector {
+public class CustomPropLocationDetectorTFOD {
 
 //    public static double PROP_OBJECT_MAX_AREA = 16000.00; //(160x100) in 640x480 resolution
 public static double PROP_OBJECT_MAX_AREA = 62500.00; //(250x250) in 1280x720 resolution
@@ -126,7 +126,7 @@ public static double PROP_OBJECT_MAX_AREA = 62500.00; //(250x250) in 1280x720 re
      */
     private VisionPortal visionPortal;
 
-    public CustomPropLocationDetector(HardwareMap hardwareMap) {
+    public CustomPropLocationDetectorTFOD(HardwareMap hardwareMap) {
         // Create the TensorFlow processor by using a builder.
         tfod = new TfodProcessor.Builder()
                 .setModelAssetName(TFOD_MODEL_ASSET)
