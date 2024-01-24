@@ -58,7 +58,10 @@ public abstract class CompetitionAuto extends LinearOpMode {
     public static double PIXEL_BACKUP_DISTANCE = 4.0; //to backup to avoid hitting the pixel when turning after dropping it on spike mark
     public static double BACKSTAGE_PARK_DISTANCE = 15.0;
     public static double SPIKE_CENTER_TURN_ANGLE = 5.0;
-    public static double SPIKE_SIDE_TURN_ANGLE = 40.0;
+    public static double SPIKE_LEFT_TURN_ANGLE = 40.0;
+    public static double SPIKE_RIGHT_TURN_ANGLE = 40.0;
+
+
 
     public static double BOARD_SIDE_ANGLE = 30.0; //TODO: test this on board
 
@@ -162,7 +165,7 @@ public abstract class CompetitionAuto extends LinearOpMode {
     private void runAutoRoutine() {
 
         //TEMP CODE FOR PURPOSES
-        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_SIDE_TURN_ANGLE, TurnDirection.LEFT));
+        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_LEFT_TURN_ANGLE, TurnDirection.LEFT));
         stop();
 
         liftBlade("up");
@@ -192,27 +195,27 @@ public abstract class CompetitionAuto extends LinearOpMode {
 
             if (targetPosition == TargetPosition.LEFT) {
                 DebugLog.log("Turni" +
-                        "g left %.1f degrees", SPIKE_SIDE_TURN_ANGLE);
-                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_SIDE_TURN_ANGLE, TurnDirection.LEFT));
+                        "g left %.1f degrees", SPIKE_LEFT_TURN_ANGLE);
+                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_LEFT_TURN_ANGLE, TurnDirection.LEFT));
             } else if (targetPosition == TargetPosition.CENTER) {
                 DebugLog.log("Turning right %.1f degrees", SPIKE_CENTER_TURN_ANGLE);
                 pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_CENTER_TURN_ANGLE, TurnDirection.RIGHT));
             } else if (targetPosition == TargetPosition.RIGHT) {
-                DebugLog.log("Turning right %.1f degrees", SPIKE_SIDE_TURN_ANGLE);
-                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_SIDE_TURN_ANGLE, TurnDirection.RIGHT));
+                DebugLog.log("Turning right %.1f degrees", SPIKE_RIGHT_TURN_ANGLE);
+                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_RIGHT_TURN_ANGLE, TurnDirection.RIGHT));
             }
 
         } else { //RED
 
             if (targetPosition == TargetPosition.LEFT) {
-                DebugLog.log("Turning left %.1f degrees", SPIKE_SIDE_TURN_ANGLE);
-                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_SIDE_TURN_ANGLE, TurnDirection.LEFT));
+                DebugLog.log("Turning left %.1f degrees", SPIKE_LEFT_TURN_ANGLE);
+                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_LEFT_TURN_ANGLE, TurnDirection.LEFT));
             } else if (targetPosition == TargetPosition.CENTER) {
                 DebugLog.log("Turning left %.1f degrees", SPIKE_CENTER_TURN_ANGLE);
                 pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_CENTER_TURN_ANGLE, TurnDirection.LEFT));
             } else if (targetPosition == TargetPosition.RIGHT) {
-                DebugLog.log("Turning right %.1f degrees", SPIKE_SIDE_TURN_ANGLE);
-                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_SIDE_TURN_ANGLE, TurnDirection.RIGHT));
+                DebugLog.log("Turning right %.1f degrees", SPIKE_RIGHT_TURN_ANGLE);
+                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_RIGHT_TURN_ANGLE, TurnDirection.RIGHT));
             }
 
         }
@@ -275,8 +278,8 @@ public abstract class CompetitionAuto extends LinearOpMode {
                         pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(90 + SPIKE_CENTER_TURN_ANGLE, TurnDirection.LEFT)); //turn left 95 degrees to get perpendicular to the scoring backdrop
                     } else {
                         //TargetPosition.RIGHT - we are 40 degrees off center (to the right) and 2 inches back from the spike mark
-                        DebugLog.log("Turning left %.1f degrees", 90 + SPIKE_SIDE_TURN_ANGLE);
-                        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(90 + SPIKE_SIDE_TURN_ANGLE, TurnDirection.LEFT)); //turn left 130 degrees
+                        DebugLog.log("Turning left %.1f degrees", 90 + SPIKE_RIGHT_TURN_ANGLE);
+                        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(90 + SPIKE_RIGHT_TURN_ANGLE, TurnDirection.LEFT)); //turn left 130 degrees
                     }
 
                 } else { //RED
@@ -287,8 +290,8 @@ public abstract class CompetitionAuto extends LinearOpMode {
                         pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(90 + SPIKE_CENTER_TURN_ANGLE, TurnDirection.RIGHT)); //turn right 95 degrees to get perpendicular to the scoring backdrop
                     } else {
                         //TargetPosition.LEFT - we are 40 degrees off center (to the left) and 2 inches back from the spike mark
-                        DebugLog.log("Turning right %.1f degrees", 90 + SPIKE_SIDE_TURN_ANGLE);
-                        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(90 + SPIKE_SIDE_TURN_ANGLE, TurnDirection.RIGHT)); //turn right 130 degrees
+                        DebugLog.log("Turning right %.1f degrees", 90 + SPIKE_LEFT_TURN_ANGLE);
+                        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(90 + SPIKE_LEFT_TURN_ANGLE, TurnDirection.RIGHT)); //turn right 130 degrees
                     }
 
                 }
@@ -310,12 +313,12 @@ public abstract class CompetitionAuto extends LinearOpMode {
                 //we have to drive around the spike mark so we don't knock our dropped pixel
                 if (getAlliance() == Alliance.BLUE) {
                     //TargetPosition.LEFT - we are 40 degrees off center (to the left) and 2 inches back from the spike mark
-                    DebugLog.log("Turning left %.1f degrees", 90 - SPIKE_SIDE_TURN_ANGLE);
-                    pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_SIDE_TURN_ANGLE, TurnDirection.LEFT));  //turn left 50 degrees to get get perpendicular to the scoring backdrop
+                    DebugLog.log("Turning left %.1f degrees", 90 -  SPIKE_LEFT_TURN_ANGLE);
+                    pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_LEFT_TURN_ANGLE, TurnDirection.LEFT));  //turn left 50 degrees to get get perpendicular to the scoring backdrop
                 } else {
                     //Red && TargetPosition.RIGHT - we are 40 degrees off center (to the right) and 2 inches back from the spike mark
-                    DebugLog.log("Turning right %.1f degrees", 90 - SPIKE_SIDE_TURN_ANGLE);
-                    pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_SIDE_TURN_ANGLE, TurnDirection.RIGHT));  //turn right 50 degrees to get get perpendicular to the scoring backdrop
+                    DebugLog.log("Turning right %.1f degrees", 90 - SPIKE_RIGHT_TURN_ANGLE);
+                    pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_RIGHT_TURN_ANGLE, TurnDirection.RIGHT));  //turn right 50 degrees to get get perpendicular to the scoring backdrop
                 }
 
                 //TODO: drive forward X inches to get into row 5, re-orient bot to get close enough to the scoring backdrop, rotate into correct scoring position,
@@ -368,8 +371,17 @@ public abstract class CompetitionAuto extends LinearOpMode {
 
         //revert angle
         TurnDirection turnDirection = (getAlliance() == Alliance.BLUE) ? TurnDirection.RIGHT : TurnDirection.LEFT;
-        DebugLog.log("Turning %s %.1f degrees", turnDirection, SPIKE_SIDE_TURN_ANGLE);
-        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_SIDE_TURN_ANGLE, turnDirection));
+        switch (turnDirection){
+            case RIGHT:
+                DebugLog.log("Turning %s %.1f degrees", turnDirection, SPIKE_LEFT_TURN_ANGLE);
+                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_LEFT_TURN_ANGLE, turnDirection));
+                break;
+            case LEFT:
+                DebugLog.log("Turning %s %.1f degrees", turnDirection, SPIKE_RIGHT_TURN_ANGLE);
+                pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_RIGHT_TURN_ANGLE, turnDirection));
+                break;
+        }
+
 
         //drive forward into center stage area (col C for Blue, D for Red)
         //TODO: test/verify this distance on actual field
@@ -414,8 +426,16 @@ public abstract class CompetitionAuto extends LinearOpMode {
             DebugLog.log("Driving backward %.1f inches", SPIKE_SIDE_FORWARD_DISTANCE - PIXEL_BACKUP_DISTANCE);
             driveStraight(MAX_DRIVE_SPEED, -(SPIKE_SIDE_FORWARD_DISTANCE - PIXEL_BACKUP_DISTANCE), 4);
             //revert angle
-            DebugLog.log("Turning %s %.1f degrees", turnDirection, SPIKE_SIDE_TURN_ANGLE);
-            pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_SIDE_TURN_ANGLE, turnDirection));
+            switch (turnDirection) {
+                case RIGHT:
+                    DebugLog.log("Turning %s %.1f degrees", turnDirection, SPIKE_LEFT_TURN_ANGLE);
+                    pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_LEFT_TURN_ANGLE, turnDirection));
+                    break;
+                case LEFT:
+                    DebugLog.log("Turning %s %.1f degrees", turnDirection, SPIKE_RIGHT_TURN_ANGLE);
+                    pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_RIGHT_TURN_ANGLE, turnDirection));
+                    break;
+            }
         }
 
         driveStraight(MAX_DRIVE_SPEED, -10, 4);
