@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.op.auto;
 
+import android.util.Size;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -12,28 +14,26 @@ import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.controller.PIDController;
 import org.firstinspires.ftc.teamcode.model.Alliance;
+import org.firstinspires.ftc.teamcode.model.RandomizationItem;
 import org.firstinspires.ftc.teamcode.model.TargetPosition;
 import org.firstinspires.ftc.teamcode.model.TurnDirection;
 import org.firstinspires.ftc.teamcode.util.AngleUtils;
 import org.firstinspires.ftc.teamcode.util.DebugLog;
-import org.firstinspires.ftc.teamcode.vision.CustomPropLocationDetector;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Locale;
+import org.firstinspires.ftc.teamcode.vision.CustomPropLocationDetectorOpenCV;
+import org.firstinspires.ftc.vision.VisionPortal;
 
 @Config
 @Autonomous(name = "AutoComp", group = "Robot", preselectTeleOp = "Tele-Arcade")
 public abstract class CompetitionAuto extends LinearOpMode {
 
-    static final double COUNTS_PER_MOTOR_REV = 537.6;    // neverest 20 - PAT / RBR value
+    static final double COUNTS_PER_MOTOR_REV = 537.6;    // neverest 20
     static final double DRIVE_GEAR_REDUCTION = (15.0 / 20.0);     // No External Gearing.
     static final double WHEEL_DIAMETER_INCHES = 4.0;     // For figuring circumference
     static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * Math.PI);
@@ -74,8 +74,10 @@ public abstract class CompetitionAuto extends LinearOpMode {
     private DcMotorEx intake1 = null;
     private DcMotorEx ext1 = null;
     private IMU imu = null;
-    Servo servo1;
-    private CustomPropLocationDetector customPropLocationDetector = null;
+    private Servo servo1;
+    private VisionPortal visionPortal = null;
+    private CustomPropLocationDetectorOpenCV customPropLocationDetector = null;
+    private final RandomizationItem randomizationItem = RandomizationItem.PROP;
 
     private PIDController pidRotate;
     private ElapsedTime elapsedTime = null;
@@ -159,27 +161,21 @@ public abstract class CompetitionAuto extends LinearOpMode {
         imu.resetYaw(); //zero out our rotation angle
         elapsedTime = new ElapsedTime();
 
-        customPropLocationDetector = new CustomPropLocationDetector(hardwareMap);
+        customPropLocationDetector = new CustomPropLocationDetectorOpenCV(getAlliance(), telemetry);
+
+        VisionPortal.Builder builder = new VisionPortal.Builder();
+        builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 2"));
+        builder.setCameraResolution(new Size(1280, 720));
+        // Enable the RC preview (LiveView).  Set "false" to omit camera monitoring.
+        builder.enableLiveView(true);
+        // Set and enable the processors
+        builder.addProcessors(customPropLocationDetector);
+        visionPortal = builder.build();
+
+        customPropLocationDetector.setVisionPortal(visionPortal);
     }
 
-    private void runAutoRoutine() {
-
-        //TEMP CODE FOR PURPOSES
-        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_LEFT_TURN_ANGLE, TurnDirection.LEFT));
-        stop();
-
-        liftBlade("up");
-
-        //---------------------------------------------------- VISION ----------------------------------------------------
-
-        DebugLog.log("Starting at position %s, alliance %s", getStartingPosition(), getAlliance());
-        TargetPosition targetPosition = getRandomizationTargetPosition();
-        if (targetPosition == null) {
-            //if we couldn't find a target using vision, assume it's on the right side,
-            //since the camera is on the left side of the robot and cannot fully see the full right spike area
-            targetPosition = TargetPosition.RIGHT;
-        }
-
+    private void scoreSpikePixel(TargetPosition targetPosition) {
         //---------------------------------------------------- PLACE PIXEL ON SPIKE ----------------------------------------------------
 
         DebugLog.log("Target scoring position is %s", targetPosition);
@@ -241,13 +237,27 @@ public abstract class CompetitionAuto extends LinearOpMode {
         driveStraight(MAX_DRIVE_SPEED, -PIXEL_BACKUP_DISTANCE, 2);
 
         sleep(250);
+    }
+
+    private void runAutoRoutine() {
+        liftBlade("up");
+
+        //---------------------------------------------------- VISION ----------------------------------------------------
+        DebugLog.log("Starting at position %s, alliance %s", getStartingPosition(), getAlliance());
+        TargetPosition targetPosition = getRandomizationTargetPosition();
+        if (targetPosition == null) {
+            //if we couldn't find a target using vision, assume it's on the right side,
+            //since the camera is on the left side of the robot and cannot usually fully see the full right spike area
+            targetPosition = TargetPosition.RIGHT;
+        }
+
+        scoreSpikePixel(targetPosition);
 
         //---------------------------------------------------- DRIVE TO BACKSTAGE LOGIC ----------------------------------------------------
 
         if (getStartingPosition().contains("2")) {
             DebugLog.log("Starting in bottom half of field");
             //we are on the far side closest to the audience and have to drive the long way through the center stage door to get to the back stage area
-            // (to avoid teammate bot near wall)
 
             //target is on the inside closest to truss, which is good since we can then drive straight ahead towards center of field without hitting dropped pixel
             if ((getAlliance() == Alliance.BLUE && targetPosition == TargetPosition.LEFT) || (getAlliance() == Alliance.RED && targetPosition == TargetPosition.RIGHT)) {
@@ -321,8 +331,8 @@ public abstract class CompetitionAuto extends LinearOpMode {
                     pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(SPIKE_RIGHT_TURN_ANGLE, TurnDirection.RIGHT));  //turn right 50 degrees to get get perpendicular to the scoring backdrop
                 }
 
-                //TODO: drive forward X inches to get into row 5, re-orient bot to get close enough to the scoring backdrop, rotate into correct scoring position,
-                //  put arm into scoring position, outtake pixel, then drive into parking position in backstage
+        //TODO: drive forward X inches to get into row 5, re-orient bot to get close enough to the scoring backdrop, rotate into correct scoring position,
+        //  put arm into scoring position, outtake pixel, then drive into parking position in backstage
 
                 //TODO: verify/test this distance on actual field
                 DebugLog.log("Driving forward %.1f inches", SHORT_PATH_INTERIOR_SIDE_BACKDROP_FORWARD_DISTANCE);
@@ -441,16 +451,16 @@ public abstract class CompetitionAuto extends LinearOpMode {
         driveStraight(MAX_DRIVE_SPEED, -10, 4);
         //Turn towards audience wall
         //TODO: test/verify this angle on actual field - we need to make sure we don't drive into the wall or spike stacks along it
-        DebugLog.log("Turning %s %.1f degrees", turnDirection, 45);
-        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(45, turnDirection));
+        DebugLog.log("Turning %s %.1f degrees", turnDirection, 45.0);
+        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(45.0, turnDirection));
         //TODO: test/verify this distance on actual field - we need to make sure we don't drive into the wall or spike stacks along it
         DebugLog.log("Driving forward %.1f inches", 33.94112549695428);
         driveStraight(MAX_DRIVE_SPEED, 33.94112549695428, 4);
 
         //turn to drive straight along the audience wall
         turnDirection = (getAlliance() == Alliance.BLUE) ? TurnDirection.LEFT : TurnDirection.RIGHT;
-        DebugLog.log("Turning %s %.1f degrees", turnDirection, 45);
-        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(45, turnDirection));
+        DebugLog.log("Turning %s %.1f degrees", turnDirection, 45.0);
+        pidTurn(MAX_TURN_SPEED, AngleUtils.getRelativeTurnAngle(45.0, turnDirection));
 
         // drive forward approx 1 square
         // turn north towards center stage door
@@ -474,12 +484,13 @@ public abstract class CompetitionAuto extends LinearOpMode {
     }
 
     private TargetPosition getRandomizationTargetPosition() {
+        customPropLocationDetector.setDetectedPosition(null); //ensure we start with clean state
         double currentSeconds = elapsedTime.seconds();
         boolean pannedLeft = false;
         boolean pannedRight = false;
         double panLeftThreshold = currentSeconds + 1.5;
         double panRightThreshold = panLeftThreshold + 1.5;
-        double timeThreshold = currentSeconds + 7.0;
+        double timeThreshold = currentSeconds + 5.0;
         TargetPosition targetPosition = null;
 
         while (targetPosition == null && opModeIsActive() && elapsedTime.seconds() < timeThreshold) {
@@ -493,11 +504,12 @@ public abstract class CompetitionAuto extends LinearOpMode {
                 customPropLocationDetector.panRight();
                 pannedRight = true;
             }
-            targetPosition = customPropLocationDetector.detectPropLocation();
+            targetPosition = customPropLocationDetector.getDetectedPosition();
             sleep(250);
         }
 
         customPropLocationDetector.resetPanTilt();
+        visionPortal.setProcessorEnabled(customPropLocationDetector, false);
 
         if (targetPosition == null) {
             DebugLog.log("No target position found using vision");
@@ -505,14 +517,15 @@ public abstract class CompetitionAuto extends LinearOpMode {
             DebugLog.log("Target position found using vision: %s", targetPosition);
         }
 
+        /*
+        //Save a screen capture of the camera view for debugging
         DateFormat dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
         Calendar cal = Calendar.getInstance();
         String timestamp = dateFormat.format(cal.getTime());
         customPropLocationDetector.getVisionPortal().saveNextFrameRaw(String.format(Locale.US, "SpikeCapture-%s", timestamp));
 
         sleep(300);
-        //we're done, clean up vision related resources
-        customPropLocationDetector.shutdown();
+         */
 
         return targetPosition;
     }
